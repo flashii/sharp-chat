@@ -6,6 +6,6 @@ namespace SharpChat.Events {
         public const string TYPE = PREFIX + @"destroy";
 
         public SessionDestroyEvent(ISession session)
-            : base(session) {}
+            : base(session, true) {}
     }
 }

@@ -60,7 +60,6 @@ namespace SharpChat {
 
         public void Update() { // this should probably not exist, or at least not called the way it is
             Sessions.CheckTimeOut();
-            PruneSessionlessUsers(); // this function also needs to go
         }
 
         public void BroadcastMessage(string text) {
@@ -133,20 +132,6 @@ namespace SharpChat {
             //user.ForceChannel(channel);
         }
 
-        [Obsolete(@"Use ChannelUsers.LeaveChannel")]
-        public void LeaveChannel(IUser user, IChannel channel) {
-            // handle in channelusers
-            //channel.SendPacket(new UserChannelLeavePacket(user));
-        }
-
-        public void PruneSessionlessUsers() {
-            Users.GetUsers(users => {
-                foreach(IUser user in users)
-                    if(Sessions.GetSessionCount(user) < 1)
-                        Users.Disconnect(user, UserDisconnectReason.TimeOut);
-            });
-        }
-
         public void DispatchEvent(object sender, IEvent evt) {
             if(evt == null)
                 throw new ArgumentNullException(nameof(evt));
@@ -154,6 +139,7 @@ namespace SharpChat {
             lock(Sync) {
                 Logger.Debug(evt);
 
+                // this order matters, don't change it
                 Sessions.HandleEvent(sender, evt);
                 Users.HandleEvent(sender, evt);
                 Channels.HandleEvent(sender, evt);

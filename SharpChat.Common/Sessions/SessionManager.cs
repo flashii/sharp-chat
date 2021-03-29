@@ -1,7 +1,6 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Configuration;
 using SharpChat.Events;
-using SharpChat.Packets;
 using SharpChat.Users;
 using SharpChat.WebSocket;
 using System;
@@ -99,7 +98,7 @@ namespace SharpChat.Sessions {
                 throw new ArgumentNullException(nameof(callback));
 
             lock(Sync)
-                callback.Invoke(Sessions.Where(s => s.HasUser() && s.User.Equals(user)));
+                callback.Invoke(Sessions.Where(s => user.Equals(s.User)));
         }
 
         public void GetLocalSessions(IUser user, Action<IEnumerable<ISession>> callback) {
@@ -109,7 +108,7 @@ namespace SharpChat.Sessions {
                 throw new ArgumentNullException(nameof(callback));
 
             lock(Sync)
-                callback.Invoke(LocalSessions.Where(s => s.HasUser() && s.User.Equals(user)));
+                callback.Invoke(LocalSessions.Where(s => user.Equals(s.User)));
         }
 
         // i wonder what i'll think about this after sleeping a night on it
@@ -122,7 +121,7 @@ namespace SharpChat.Sessions {
                 throw new ArgumentNullException(nameof(callback));
 
             lock(Sync)
-                callback.Invoke(Sessions.Where(s => s.HasUser() && users.Any(s.User.Equals)));
+                callback.Invoke(Sessions.Where(s => users.Any(s.User.Equals)));
         }
 
         public void GetLocalSessions(IEnumerable<IUser> users, Action<IEnumerable<ISession>> callback) {
@@ -132,7 +131,7 @@ namespace SharpChat.Sessions {
                 throw new ArgumentNullException(nameof(callback));
 
             lock(Sync)
-                callback.Invoke(LocalSessions.Where(s => s.HasUser() && users.Any(s.User.Equals)));
+                callback.Invoke(LocalSessions.Where(s => users.Any(s.User.Equals)));
         }
 
         public void GetActiveSessions(Action<IEnumerable<ISession>> callback) {
@@ -140,7 +139,7 @@ namespace SharpChat.Sessions {
                 throw new ArgumentNullException(nameof(callback));
 
             lock(Sync)
-                callback.Invoke(Sessions.Where(s => s.HasUser() && !HasTimedOut(s)));
+                callback.Invoke(Sessions.Where(s => !HasTimedOut(s)));
         }
 
         public void GetActiveLocalSessions(Action<IEnumerable<ISession>> callback) {
@@ -148,7 +147,7 @@ namespace SharpChat.Sessions {
                 throw new ArgumentNullException(nameof(callback));
 
             lock(Sync)
-                callback.Invoke(LocalSessions.Where(s => s.HasUser() && !HasTimedOut(s)));
+                callback.Invoke(LocalSessions.Where(s => !HasTimedOut(s)));
         }
 
         public void GetDeadLocalSessions(Action<IEnumerable<ISession>> callback) {
@@ -198,15 +197,28 @@ namespace SharpChat.Sessions {
                 Dispatcher.DispatchEvent(this, new SessionChannelSwitchEvent(session, channel));
         }
 
+        public void Destroy(IConnection conn) {
+            if(conn == null)
+                throw new ArgumentNullException(nameof(conn));
+
+            lock(Sync) {
+                ISession session = GetLocalSession(conn);
+                if(session == null)
+                    return;
+                if(session is Session ls)
+                    LocalSessions.Remove(ls);
+                Dispatcher.DispatchEvent(this, new SessionDestroyEvent(session));
+            }
+        }
+
         public void Destroy(ISession session) {
             if(session == null)
                 throw new ArgumentNullException(nameof(session));
 
             lock(Sync) {
-                ISession s = GetSession(session);
-                if(s is Session ls) {
+                session = GetSession(session);
+                if(session is Session ls)
                     LocalSessions.Remove(ls);
-                }
 
                 Dispatcher.DispatchEvent(this, new SessionDestroyEvent(session));
             }
@@ -216,14 +228,14 @@ namespace SharpChat.Sessions {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
             lock(Sync)
-                return Sessions.Any(s => s.HasUser() && s.User.Equals(user));
+                return Sessions.Any(s => user.Equals(s.User));
         }
 
         public int GetSessionCount(IUser user) {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
             lock(Sync)
-                return Sessions.Count(s => s.HasUser() && s.User.Equals(user));
+                return Sessions.Count(s => user.Equals(s.User));
         }
 
         public int GetAvailableSessionCount(IUser user) {
@@ -265,9 +277,16 @@ namespace SharpChat.Sessions {
         }
 
         public void HandleEvent(object sender, IEvent evt) {
-            if(evt is SessionEvent se)
-                lock(Sync)
+            lock(Sync) {
+                switch(evt) {
+                    case SessionDestroyEvent sde:
+                        Sessions.RemoveAll(s => sde.SessionId.Equals(s.SessionId));
+                        break;
+                }
+
+                if(evt is SessionEvent se)
                     GetLocalSession(se.SessionId)?.HandleEvent(sender, se);
+            }
         }
     }
 }

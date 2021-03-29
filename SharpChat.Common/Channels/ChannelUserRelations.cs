@@ -183,6 +183,11 @@ namespace SharpChat.Channels {
                             ? new MessageDeleteEvent(mue)
                             : new MessageUpdateEventWithData(mue, msg);
                         break;
+
+                    case SessionDestroyEvent sde:
+                        if(Sessions.GetSessionCount(sde.User) < 1)
+                            Users.Disconnect(sde.User, UserDisconnectReason.TimeOut);
+                        break;
                 }
 
                 if(targets == null && evt.Channel != null)

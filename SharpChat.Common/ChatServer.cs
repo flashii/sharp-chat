@@ -24,12 +24,12 @@ namespace SharpChat {
         public const int DEFAULT_MAX_CONNECTIONS = 5;
         public const int ID_LENGTH = 8;
 
-        public string ServerId { get; }
+        private string ServerId { get; }
         private IConfig Config { get; }
         private IServer Server { get; }
         private ChatContext Context { get; }
 
-        private IReadOnlyCollection<IPacketHandler> PacketHandlers { get; }
+        private IReadOnlyDictionary<ClientPacketId, IPacketHandler> PacketHandlers { get; }
 
         public bool AcceptingConnections { get; private set; }
 
@@ -40,41 +40,43 @@ namespace SharpChat {
             Config = config ?? throw new ArgumentNullException(nameof(config));
             Context = new ChatContext(ServerId, Config.ScopeTo(@"chat"), databaseBackend, dataProvider);
 
-            List<IPacketHandler> handlers = new List<IPacketHandler> {
-                new PingPacketHandler(Context.Sessions),
-                new AuthPacketHandler(Context.Sessions, Context.Users, Context.Channels, Context.ChannelUsers, Context.Messages, Context.DataProvider, Context.Bot, VERSION),
-                new MessageSendPacketHandler(Context.Users, Context.Channels, Context.ChannelUsers, Context.Messages, Context.Bot, new ICommand[] {
-                    new JoinCommand(Context.Channels, Context.ChannelUsers, Context.Sessions),
-                    new AFKCommand(Context.Users),
-                    new WhisperCommand(),
-                    new ActionCommand(Context.Messages),
-                    new WhoCommand(Context.Users, Context.Channels, Context.ChannelUsers, Context.Bot),
-                    new DeleteMessageCommand(Context.Messages),
-
-                    new NickCommand(Context.Users),
-                    new CreateChannelCommand(Context.Channels, Context.ChannelUsers, Context.Bot),
-                    new DeleteChannelCommand(Context.Channels, Context.Bot),
-                    new ChannelPasswordCommand(Context.Channels, Context.Bot),
-                    new ChannelRankCommand(Context.Channels, Context.Bot),
-
-                    new BroadcastCommand(Context),
-                    new KickBanUserCommand(Context.Users),
-                    new PardonUserCommand(Context.DataProvider, Context.Bot),
-                    new PardonIPCommand(Context.DataProvider, Context.Bot),
-                    new BanListCommand(Context.DataProvider, Context.Bot),
-                    new WhoIsUserCommand(Context.Users, Context.Sessions, Context.Bot),
-                    new SilenceUserCommand(Context.Users, Context.Bot),
-                    new UnsilenceUserCommand(Context.Users, Context.Bot),
-                }),
+            Dictionary<ClientPacketId, IPacketHandler> handlers = new Dictionary<ClientPacketId, IPacketHandler>();
+            void addHandler(IPacketHandler handler) {
+                handlers.Add(handler.PacketId, handler);
             };
 
-            if(VERSION >= 2)
-                handlers.AddRange(new IPacketHandler[] {
-                    new CapabilitiesPacketHandler(Context.Sessions),
-                    new TypingPacketHandler(),
-                });
+            addHandler(new PingPacketHandler(Context.Sessions));
+            addHandler(new AuthPacketHandler(Context.Sessions, Context.Users, Context.Channels, Context.ChannelUsers, Context.Messages, Context.DataProvider, Context.Bot, VERSION));
+            addHandler(new MessageSendPacketHandler(Context.Users, Context.Channels, Context.ChannelUsers, Context.Messages, Context.Bot, new ICommand[] {
+                new JoinCommand(Context.Channels, Context.ChannelUsers, Context.Sessions),
+                new AFKCommand(Context.Users),
+                new WhisperCommand(),
+                new ActionCommand(Context.Messages),
+                new WhoCommand(Context.Users, Context.Channels, Context.ChannelUsers, Context.Bot),
+                new DeleteMessageCommand(Context.Messages),
 
-            PacketHandlers = handlers.ToArray();
+                new NickCommand(Context.Users),
+                new CreateChannelCommand(Context.Channels, Context.ChannelUsers, Context.Bot),
+                new DeleteChannelCommand(Context.Channels, Context.Bot),
+                new ChannelPasswordCommand(Context.Channels, Context.Bot),
+                new ChannelRankCommand(Context.Channels, Context.Bot),
+
+                new BroadcastCommand(Context),
+                new KickBanUserCommand(Context.Users),
+                new PardonUserCommand(Context.DataProvider, Context.Bot),
+                new PardonIPCommand(Context.DataProvider, Context.Bot),
+                new BanListCommand(Context.DataProvider, Context.Bot),
+                new WhoIsUserCommand(Context.Users, Context.Sessions, Context.Bot),
+                new SilenceUserCommand(Context.Users, Context.Bot),
+                new UnsilenceUserCommand(Context.Users, Context.Bot),
+            }));
+
+            if(VERSION >= 2) {
+                addHandler(new CapabilitiesPacketHandler(Context.Sessions));
+                addHandler(new TypingPacketHandler());
+            }
+
+            PacketHandlers = handlers;
 
             Server = server ?? throw new ArgumentNullException(nameof(server));
             Server.OnOpen += OnOpen;
@@ -99,9 +101,7 @@ namespace SharpChat {
 
         private void OnClose(IConnection conn) {
             Logger.Debug($@"[{conn}] Connection closed");
-
-            // what should the session close behaviour be?
-
+            Context.Sessions.Destroy(conn);
             Context.RateLimiter.ClearConnection(conn);
             Context.Update();
         }
@@ -116,24 +116,24 @@ namespace SharpChat {
             Context.Update();
 
             ISession sess = Context.Sessions.GetLocalSession(conn);
-            bool hasUser = sess?.HasUser() == true;
+            bool hasSession = sess != null;
 
             RateLimitState rateLimit = RateLimitState.None;
-            if(!hasUser || !Context.RateLimiter.HasRankException(sess.User))
+            if(!hasSession || !Context.RateLimiter.HasRankException(sess.User))
                 rateLimit = Context.RateLimiter.BumpConnection(conn);
             
             Logger.Debug($@"[{conn}] {rateLimit}");
-            if(!hasUser && rateLimit == RateLimitState.Drop) {
+            if(!hasSession && rateLimit == RateLimitState.Drop) {
                 conn.Close();
                 return;
             }
 
             IEnumerable<string> args = msg.Split(IServerPacket.SEPARATOR);
-            if(!Enum.TryParse(args.ElementAtOrDefault(0), out ClientPacketId opCode))
+            if(!Enum.TryParse(args.ElementAtOrDefault(0), out ClientPacketId packetId))
                 return;
 
-            if(opCode != ClientPacketId.Authenticate) {
-                if(!hasUser) 
+            if(packetId != ClientPacketId.Authenticate) {
+                if(!hasSession) 
                     return;
 
                 if(rateLimit == RateLimitState.Drop) {
@@ -143,9 +143,8 @@ namespace SharpChat {
                     sess.SendPacket(new FloodWarningPacket(Context.Bot));
             }
 
-            PacketHandlers.FirstOrDefault(x => x.PacketId == opCode)?.HandlePacket(
-                new PacketHandlerContext(args, sess, conn)
-            );
+            if(PacketHandlers.TryGetValue(packetId, out IPacketHandler handler))
+                handler.HandlePacket(new PacketHandlerContext(args, sess, conn));
         }
 
         private bool IsDisposed;

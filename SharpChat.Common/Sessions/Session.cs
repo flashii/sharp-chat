@@ -12,16 +12,16 @@ namespace SharpChat.Sessions {
         public const int ID_LENGTH = 32;
 
         public string SessionId { get; }
-        public string ServerId { get; protected set; }
-        public DateTimeOffset LastPing { get; protected set; }
-        public IUser User { get; protected set; }
+        public string ServerId { get; private set; }
+        public DateTimeOffset LastPing { get; private set; }
+        public IUser User { get; }
 
-        public bool IsConnected { get; protected set; }
-        public IPAddress RemoteAddress { get; protected set; }
+        public bool IsConnected { get; private set; }
+        public IPAddress RemoteAddress { get; private set; }
 
-        public ClientCapability Capabilities { get; protected set; }
+        public ClientCapability Capabilities { get; private set; }
 
-        protected readonly object Sync = new object();
+        private readonly object Sync = new object();
 
         private Queue<IServerPacket> PacketQueue { get; set; }
         private IConnection Connection { get; set; }
@@ -162,8 +162,12 @@ namespace SharpChat.Sessions {
                 case ChannelUserJoinEvent cje: // should send UserConnectPacket on first channel join
                     SendPacket(new ChannelJoinPacket(cje));
                     break;
-                case ChannelUserLeaveEvent cle: // Should ownership just be passed on to another user instead of Destruction?
+                case ChannelUserLeaveEvent cle:
                     SendPacket(new ChannelLeavePacket(cle));
+                    break;
+
+                case UserDisconnectEvent ude:
+                    SendPacket(new UserDisconnectPacket(ude));
                     break;
 
                 case MessageCreateEvent mce:
