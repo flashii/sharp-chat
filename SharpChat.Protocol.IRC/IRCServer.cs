@@ -1,4 +1,8 @@
-﻿using System;
+﻿using SharpChat.Protocol.IRC.Commands;
+using SharpChat.Protocol.IRC.Commands.Modern;
+using SharpChat.Protocol.IRC.Commands.RFC1459;
+using SharpChat.Protocol.IRC.Commands.RFC2810;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -8,11 +12,14 @@ using System.Threading;
 namespace SharpChat.Protocol.IRC {
     public class IRCServer : IServer {
         private const int BUFFER_SIZE = 2048;
-        
+
+        public const char PREFIX = ':';
+
         private Context Context { get; }
         private Socket Socket { get; set; }
 
         private Dictionary<Socket, IRCConnection> Connections { get; } = new Dictionary<Socket, IRCConnection>();
+        private IReadOnlyDictionary<string, ICommand> Commands { get; }
 
         private bool IsRunning { get; set; }
 
@@ -20,6 +27,54 @@ namespace SharpChat.Protocol.IRC {
 
         public IRCServer(Context ctx) {
             Context = ctx ?? throw new ArgumentNullException(nameof(ctx));
+
+            Dictionary<string, ICommand> handlers = new Dictionary<string, ICommand>();
+            void addHandler(ICommand handler) {
+                handlers.Add(handler.CommandName, handler);
+            };
+
+            // RFC 1459
+            addHandler(new AdminCommand());
+            addHandler(new AwayCommand());
+            addHandler(new InfoCommand());
+            addHandler(new InviteCommand());
+            addHandler(new IsOnCommand());
+            addHandler(new JoinCommand());
+            addHandler(new KickCommand());
+            addHandler(new KillCommand());
+            addHandler(new ListCommand());
+            addHandler(new ListUsersCommand());
+            addHandler(new MessageOfTheDayCommand());
+            addHandler(new ModeCommand());
+            addHandler(new NamesCommand());
+            addHandler(new NickCommand());
+            addHandler(new NoticeCommand());
+            addHandler(new PartCommand());
+            addHandler(new PassCommand());
+            addHandler(new PingCommand());
+            addHandler(new PrivateMessageCommand());
+            addHandler(new QuitCommand());
+            addHandler(new StatsCommand());
+            addHandler(new SummonCommand());
+            addHandler(new TimeCommand());
+            addHandler(new TopicCommand());
+            addHandler(new UserCommand());
+            addHandler(new UserHostCommand());
+            addHandler(new VersionCommand());
+            addHandler(new WAllOpsCommand());
+            addHandler(new WhoCommand());
+            addHandler(new WhoIsCommand());
+            addHandler(new WhoWasCommand());
+
+            // RFC 2810
+            addHandler(new ServiceListCommand());
+            addHandler(new ServiceQueryCommand());
+
+            // Modern
+            addHandler(new CapabilitiesCommand());
+            addHandler(new SilenceCommand());
+
+            Commands = handlers;
         }
 
         public void Listen(EndPoint endPoint) {
@@ -29,7 +84,7 @@ namespace SharpChat.Protocol.IRC {
                 throw new ArgumentNullException(nameof(endPoint));
             Socket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             Socket.Bind(endPoint);
-            Socket.NoDelay = false;
+            Socket.NoDelay = true;
             Socket.Blocking = false;
             Socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
             Socket.Listen(10);
@@ -44,6 +99,7 @@ namespace SharpChat.Protocol.IRC {
                     if(Socket.Poll(1000000, SelectMode.SelectRead)) {
                         IRCConnection conn = new IRCConnection(Socket.Accept());
                         Connections.Add(conn.Socket, conn);
+                        conn.SendReply(new Replies.WelcomeReply());
                     }
 
                     if(Connections.Count < 1) {
@@ -77,28 +133,22 @@ namespace SharpChat.Protocol.IRC {
 
             string prefix = null;
             string command = null;
-            int replyCode = 0;
             List<string> args = new List<string>();
 
             try {
                 int i = 0;
 
-                if(line[0] == ':') {
+                if(line[0] == PREFIX) {
                     while(line[++i] != ' ');
                     prefix = line[1..i];
                 } else
                     prefix = @"meow";
 
                 int commandStart = i;
-                if(char.IsDigit(line[i + 1]) && char.IsDigit(line[i + 2]) && char.IsDigit(line[i + 3])) {
-                    replyCode = int.Parse(line.Substring(i + 1, 3));
-                    i += 4;
-                } else {
-                    while((i < (line.Length - 1)) && line[++i] != ' ');
-                    if(line.Length - 1 == i)
-                        ++i;
-                    command = line[commandStart..i];
-                }
+                while((i < (line.Length - 1)) && line[++i] != ' ');
+                if(line.Length - 1 == i)
+                    ++i;
+                command = line[commandStart..i];
 
                 int paramStart = ++i;
                 while(i < line.Length) {
@@ -107,7 +157,7 @@ namespace SharpChat.Protocol.IRC {
                         paramStart = i + 1;
                     }
 
-                    if(line[i] == ':') {
+                    if(line[i] == PREFIX) {
                         if(paramStart != i)
                             args.Add(line[paramStart..i]);
                         args.Add(line[(i + 1)..]);
@@ -128,13 +178,10 @@ namespace SharpChat.Protocol.IRC {
 
             args.RemoveAll(string.IsNullOrWhiteSpace);
 
-            Logger.Debug($@"{prefix} {command} {replyCode} {string.Join(' ', args)}");
+            Logger.Debug($@"{prefix} {command} {string.Join(' ', args)}");
 
-            if(replyCode == 0) {
-                //
-            } else {
-                //
-            }
+            if(Commands.ContainsKey(command))
+                Commands[command].HandleCommand(new CommandArgs());
         }
 
         private bool IsDisposed;
