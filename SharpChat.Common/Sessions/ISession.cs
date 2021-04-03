@@ -1,7 +1,6 @@
 ﻿using SharpChat.Events;
-using SharpChat.Packets;
+using SharpChat.Protocol;
 using SharpChat.Users;
-using SharpChat.WebSocket;
 using System;
 using System.Net;
 
@@ -15,10 +14,6 @@ namespace SharpChat.Sessions {
         bool IsConnected { get; }
         IPAddress RemoteAddress { get; }
 
-        ClientCapability Capabilities { get; }
-
         bool HasConnection(IConnection conn);
-
-        void SendPacket(IServerPacket packet);
     }
 }

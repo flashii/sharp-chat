@@ -4,9 +4,9 @@ using SharpChat.Database;
 using SharpChat.Database.Null;
 using SharpChat.DataProvider;
 using SharpChat.DataProvider.Null;
+using SharpChat.Protocol.IRC;
+using SharpChat.Protocol.SockChat;
 using SharpChat.Reflection;
-using SharpChat.WebSocket;
-using SharpChat.WebSocket.Fleck;
 using System;
 using System.IO;
 using System.Linq;
@@ -76,8 +76,18 @@ namespace SharpChat {
             if(string.IsNullOrEmpty(portArg) || !ushort.TryParse(portArg, out ushort port))
                 port = DEFAULT_PORT;
 
-            using IServer wss = new FleckServer(new IPEndPoint(IPAddress.Any, port));
-            using ChatServer scs = new ChatServer(config, wss, dataProvider, databaseBackend);
+            Logger.Write(@"Creating context...");
+            using Context ctx = new Context(config.ScopeTo(@"chat"), databaseBackend, dataProvider);
+
+            Logger.Write(@"Starting Sock Chat server...");
+            using SockChatServer scs = new SockChatServer(ctx);
+            scs.Listen(new IPEndPoint(IPAddress.Any, port));
+
+#if DEBUG
+            Logger.Write(@"Starting IRC server...");
+            using IRCServer ircs = new IRCServer(ctx);
+            ircs.Listen(new IPEndPoint(IPAddress.Any, 6667));
+#endif
 
             using ManualResetEvent mre = new ManualResetEvent(false);
             Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };

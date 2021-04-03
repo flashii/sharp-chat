@@ -1,6 +1,6 @@
 ﻿using SharpChat.Configuration;
+using SharpChat.Protocol;
 using SharpChat.Users;
-using SharpChat.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Linq;

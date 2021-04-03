@@ -1,8 +1,8 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Configuration;
 using SharpChat.Events;
+using SharpChat.Protocol;
 using SharpChat.Users;
-using SharpChat.WebSocket;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -173,14 +173,6 @@ namespace SharpChat.Sessions {
             }
         }
 
-        public void SetCapabilities(ISession session, ClientCapability caps) {
-            if(session == null)
-                throw new ArgumentNullException(nameof(session));
-
-            lock(Sync)
-                Dispatcher.DispatchEvent(this, new SessionCapabilitiesEvent(session, caps));
-        }
-
         public void DoKeepAlive(ISession session) {
             if(session == null)
                 throw new ArgumentNullException(nameof(session));
@@ -254,15 +246,6 @@ namespace SharpChat.Sessions {
                                 .Distinct();
             });
             return addrs;
-        }
-
-        public ClientCapability GetCapabilities(IUser user) {
-            if(user == null)
-                throw new ArgumentNullException(nameof(user));
-
-            ClientCapability caps = 0;
-            GetSessions(user, sessions => caps = sessions.Select(s => s.Capabilities).Aggregate((x, y) => x | y));
-            return caps;
         }
 
         public void CheckTimeOut() {

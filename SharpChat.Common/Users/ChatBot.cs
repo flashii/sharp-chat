@@ -1,6 +1,4 @@
-﻿using SharpChat.Packets;
-
-namespace SharpChat.Users {
+﻿namespace SharpChat.Users {
     public class ChatBot : IUser {
         public long UserId { get; } = -1;
         public string UserName { get; } = @"ChatBot";
@@ -13,9 +11,6 @@ namespace SharpChat.Users {
 
         public bool Equals(IUser other)
             => other != null && (other is ChatBot || other.UserId == UserId);
-
-        public string PackBot() // permission part is empty for bot apparently
-            => string.Join(IServerPacket.SEPARATOR, UserId, UserName, Colour, string.Empty);
 
         public override string ToString()
             => @"<ChatBot>";

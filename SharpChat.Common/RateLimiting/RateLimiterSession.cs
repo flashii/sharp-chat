@@ -1,4 +1,4 @@
-﻿using SharpChat.WebSocket;
+﻿using SharpChat.Protocol;
 using System;
 using System.Collections.Generic;
 using System.Linq;

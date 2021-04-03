@@ -10,13 +10,11 @@ namespace SharpChat.Events {
         public DateTimeOffset LastPing { get; }
         public bool IsConnected { get; }
         public IPAddress RemoteAddress { get; }
-        public ClientCapability Capabilities { get; }
 
         public SessionCreatedEvent(ISession session) : base(session, true) {
             LastPing = session.LastPing;
             IsConnected = session.IsConnected;
             RemoteAddress = session.RemoteAddress;
-            Capabilities = session.Capabilities;
         }
     }
 }

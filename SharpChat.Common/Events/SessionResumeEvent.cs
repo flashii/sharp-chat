@@ -1,5 +1,5 @@
-﻿using SharpChat.Sessions;
-using SharpChat.WebSocket;
+﻿using SharpChat.Protocol;
+using SharpChat.Sessions;
 using System;
 using System.Net;
 

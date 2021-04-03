@@ -11,7 +11,8 @@
     <ProjectReference Include="..\SharpChat.Database.MariaDB\SharpChat.Database.MariaDB.csproj" />
     <ProjectReference Include="..\SharpChat.Database.SQLite\SharpChat.Database.SQLite.csproj" />
     <ProjectReference Include="..\SharpChat.DataProvider.Misuzu\SharpChat.DataProvider.Misuzu.csproj" />
-    <ProjectReference Include="..\SharpChat.WebSocket.Fleck\SharpChat.WebSocket.Fleck.csproj" />
+    <ProjectReference Include="..\SharpChat.Protocol.IRC\SharpChat.Protocol.IRC.csproj" />
+    <ProjectReference Include="..\SharpChat.Protocol.SockChat\SharpChat.Protocol.SockChat.csproj" />
   </ItemGroup>
 
 </Project>
