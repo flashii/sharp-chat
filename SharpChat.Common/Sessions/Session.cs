@@ -18,7 +18,7 @@ namespace SharpChat.Sessions {
 
         private readonly object Sync = new object();
 
-        private IConnection Connection { get; set; }
+        public IConnection Connection { get; private set; }
 
         private long LastEvent { get; set; } // use this to get a session back up to speed after reconnection
 
@@ -96,6 +96,8 @@ namespace SharpChat.Sessions {
 
                 if(Connection != null) {
                     LastEvent = evt.EventId;
+                    // this forwarding should probably get replaced by an event handler within IServer implementations
+                    // would alleviate the need for the WithData shit i think
                     Connection.HandleEvent(sender, evt);
                 }
             }

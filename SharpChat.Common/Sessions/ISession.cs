@@ -14,6 +14,7 @@ namespace SharpChat.Sessions {
         bool IsConnected { get; }
         IPAddress RemoteAddress { get; }
 
+        IConnection Connection { get; }
         bool HasConnection(IConnection conn);
     }
 }

@@ -49,7 +49,7 @@ namespace SharpChat.Protocol.SockChat.Commands {
                     throw new ChannelRankCommandException(channel);
                 }
 
-                if(channel.VerifyPassword(password)) {
+                if(!Channels.VerifyPassword(channel, password)) {
                     Sessions.SwitchChannel(ctx.Session);
                     throw new ChannelPasswordCommandException(channel);
                 }

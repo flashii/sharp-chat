@@ -22,6 +22,8 @@ namespace SharpChat.Protocol.IRC {
         public bool HasAuthenticated { get; set; }
         public string Password { get; set; }
 
+        public DateTimeOffset LastPing { get; private set; }
+
         public IRCConnection(Socket sock) {
             Socket = sock ?? throw new ArgumentNullException(nameof(sock));
             ConnectionId = @"IRC!" + RNG.NextString(ID_LENGTH);
@@ -79,9 +81,12 @@ namespace SharpChat.Protocol.IRC {
         }
 
         public void HandleEvent(object sender, IEvent evt) {
-            lock(Sync) {
-                //
-            }
+            lock(Sync)
+                switch(evt) {
+                    case SessionPingEvent spe:
+                        LastPing = spe.DateTime;
+                        break;
+                }
         }
 
         public override string ToString()

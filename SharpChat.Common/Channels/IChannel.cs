@@ -13,7 +13,5 @@ namespace SharpChat.Channels {
 
         string Password { get; }
         bool HasPassword { get; }
-
-        bool VerifyPassword(string password);
     }
 }

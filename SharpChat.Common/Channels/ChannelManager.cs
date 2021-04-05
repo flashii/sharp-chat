@@ -234,6 +234,13 @@ namespace SharpChat.Channels {
             }
         }
 
+        public IChannel GetChannel(Func<IChannel, bool> predicate) {
+            if(predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+            lock(Sync)
+                return Channels.FirstOrDefault(predicate);
+        }
+
         public IChannel GetChannel(string name) {
             if(string.IsNullOrWhiteSpace(name))
                 return null;
@@ -282,6 +289,20 @@ namespace SharpChat.Channels {
 
             lock(Sync)
                 callback.Invoke(Channels.Where(c => c.HasUser(user)));
+        }
+
+        public bool VerifyPassword(IChannel channel, string password) {
+            if(channel == null)
+                throw new ArgumentNullException(nameof(channel));
+            if(password == null)
+                throw new ArgumentNullException(nameof(password));
+
+            if(GetChannel(channel) is not Channel c)
+                return false;
+            if(!c.HasPassword)
+                return true;
+
+            return c.VerifyPassword(password);
         }
 
         private void OnCreate(object sender, ChannelCreateEvent cce) {

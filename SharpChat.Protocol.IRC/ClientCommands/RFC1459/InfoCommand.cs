@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using SharpChat.Protocol.IRC.Replies;
 
 namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
     public class InfoCommand : IClientCommand {
@@ -10,8 +6,9 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
 
         public string CommandName => NAME;
 
-        public void HandleCommand(ClientCommandContext args) {
-            // return info about user
+        public void HandleCommand(ClientCommandContext ctx) {
+            ctx.Connection.SendReply(new InfoReply());
+            ctx.Connection.SendReply(new EndOfInfoReply());
         }
     }
 }

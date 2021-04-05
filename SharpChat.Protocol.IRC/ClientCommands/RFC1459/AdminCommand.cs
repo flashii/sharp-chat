@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using SharpChat.Protocol.IRC.Replies;
 
 namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
     public class AdminCommand : IClientCommand {
@@ -10,8 +6,11 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
 
         public string CommandName => NAME;
 
-        public void HandleCommand(ClientCommandContext args) {
-            // return admin info
+        public void HandleCommand(ClientCommandContext ctx) {
+            ctx.Connection.SendReply(new AdminMeReply());
+            ctx.Connection.SendReply(new AdminLocation1Reply());
+            ctx.Connection.SendReply(new AdminLocation2Reply());
+            ctx.Connection.SendReply(new AdminEMailReply());
         }
     }
 }

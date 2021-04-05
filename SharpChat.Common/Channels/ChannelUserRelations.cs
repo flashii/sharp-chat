@@ -160,6 +160,18 @@ namespace SharpChat.Channels {
                 );
         }
 
+        public void LeaveChannels(ISession session) {
+            if(session == null)
+                throw new ArgumentNullException(nameof(session));
+
+            lock(Sync)
+                Channels.GetChannels(channels => {
+                    foreach(IChannel channel in channels)
+                        if(HasSession(channel, session))
+                            LeaveChannel(channel, session);
+                });
+        }
+
         public void HandleEvent(object sender, IEvent evt) {
             lock(Sync) {
                 IEnumerable<IUser> targets = null;

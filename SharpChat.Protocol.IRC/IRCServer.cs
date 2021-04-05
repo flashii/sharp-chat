@@ -1,7 +1,12 @@
-﻿using SharpChat.Protocol.IRC.ClientCommands;
+﻿using SharpChat.Channels;
+using SharpChat.Events;
+using SharpChat.Protocol.IRC.ClientCommands;
 using SharpChat.Protocol.IRC.ClientCommands.Modern;
 using SharpChat.Protocol.IRC.ClientCommands.RFC1459;
 using SharpChat.Protocol.IRC.ClientCommands.RFC2810;
+using SharpChat.Protocol.IRC.Replies;
+using SharpChat.Protocol.IRC.ServerCommands;
+using SharpChat.Sessions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +16,7 @@ using System.Text;
 using System.Threading;
 
 namespace SharpChat.Protocol.IRC {
-    public class IRCServer : IServer {
+    public class IRCServer : IServer, IEventHandler {
         private const int BUFFER_SIZE = 2048;
 
         public const char PREFIX = ':';
@@ -38,11 +43,11 @@ namespace SharpChat.Protocol.IRC {
 
             // RFC 1459
             addHandler(new AdminCommand());
-            addHandler(new AwayCommand());
+            addHandler(new AwayCommand(Context.Users));
             addHandler(new InfoCommand());
-            addHandler(new InviteCommand());
-            addHandler(new IsOnCommand());
-            addHandler(new JoinCommand());
+            addHandler(new InviteCommand(Context.Users, Context.Channels, Context.ChannelUsers));
+            addHandler(new IsOnCommand(Context.Users));
+            addHandler(new JoinCommand(Context.Channels, Context.ChannelUsers));
             addHandler(new KickCommand());
             addHandler(new KillCommand());
             addHandler(new ListCommand(Context.Channels, Context.ChannelUsers));
@@ -54,7 +59,7 @@ namespace SharpChat.Protocol.IRC {
             addHandler(new NoticeCommand());
             addHandler(new PartCommand());
             addHandler(new PassCommand());
-            addHandler(new PingCommand());
+            addHandler(new PingCommand(Context.Sessions));
             addHandler(new PrivateMessageCommand());
             addHandler(new QuitCommand());
             addHandler(new StatsCommand());
@@ -138,6 +143,8 @@ namespace SharpChat.Protocol.IRC {
         private void OnReceive(IRCConnection conn, string line) {
             Logger.Debug($@"[{conn}] {line}");
 
+            ISession session = Context.Sessions.GetLocalSession(conn);
+
             string prefix = null;
             string command = null;
             List<string> args = new List<string>();
@@ -186,7 +193,25 @@ namespace SharpChat.Protocol.IRC {
             args.RemoveAll(string.IsNullOrWhiteSpace);
 
             if(Commands.ContainsKey(command))
-                Commands[command].HandleCommand(new ClientCommandContext(conn, args));
+                Commands[command].HandleCommand(new ClientCommandContext(session, conn, args));
+        }
+
+        public void HandleEvent(object sender, IEvent evt) {
+            lock(Sync)
+                switch(evt) {
+                    case ChannelSessionJoinEvent csje:
+                        ISession csjes = Context.Sessions.GetLocalSession(csje.SessionId);
+                        if(csjes == null || csjes.Connection is not IRCConnection csjec)
+                            break;
+                        IChannel csjech = Context.Channels.GetChannel(csje.Channel);
+                        csjec.SendCommand(new ServerJoinCommand(csjech));
+                        if(string.IsNullOrEmpty(csjech.Topic))
+                            csjec.SendReply(new NoTopicReply(csjech));
+                        else
+                            csjec.SendReply(new TopicReply(csjech));
+
+                        break;
+                }
         }
 
         private bool IsDisposed;

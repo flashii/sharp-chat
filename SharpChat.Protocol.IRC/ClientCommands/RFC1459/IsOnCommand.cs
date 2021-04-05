@@ -1,8 +1,9 @@
-﻿using System;
+﻿using SharpChat.Protocol.IRC.Replies;
+using SharpChat.Protocol.IRC.Users;
+using SharpChat.Users;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
     public class IsOnCommand : IClientCommand {
@@ -10,8 +11,41 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
 
         public string CommandName => NAME;
 
-        public void HandleCommand(ClientCommandContext args) {
-            // takes username list from args, and returns the ones that are online
+        private UserManager Users { get; }
+
+        public IsOnCommand(UserManager users) {
+            Users = users ?? throw new ArgumentNullException(nameof(users));
+        }
+
+        public void HandleCommand(ClientCommandContext ctx) {
+            IEnumerable<string> userNames = ctx.Arguments.Select(u => u.ToLowerInvariant());
+
+            const int max_length = 400; // allow for 112 characters of overhead
+            int length = 0;
+            List<string> batch = new List<string>(); 
+
+            void sendBatch() {
+                if(length < 1)
+                    return;
+                ctx.Connection.SendReply(new IsOnReply(batch));
+                length = 0;
+                batch.Clear();
+            };
+
+            Users.GetUsers(u => (u.Status == UserStatus.Online || u.Status == UserStatus.Away) && userNames.Contains(u.GetIRCName()), users => {
+                foreach(IUser user in users) {
+                    string name = user.GetIRCName();
+                    int nameLength = name.Length + 1;
+
+                    if(length + nameLength > max_length)
+                        sendBatch();
+
+                    length += nameLength;
+                    batch.Add(name);
+                }
+
+                sendBatch();
+            });
         }
     }
 }

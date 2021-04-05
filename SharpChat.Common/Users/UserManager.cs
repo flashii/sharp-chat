@@ -69,6 +69,13 @@ namespace SharpChat.Users {
                     || Users.Any(x => x.Equals(user) || x.UserName.ToLowerInvariant() == user.UserName.ToLowerInvariant());
         }
 
+        public IUser GetUser(Func<IUser, bool> predicate) {
+            if(predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+            lock(Sync)
+                return Users.FirstOrDefault(predicate);
+        }
+
         public IUser GetUser(long userId) {
             lock(Sync)
                 return Users.FirstOrDefault(x => x.UserId == userId);
@@ -116,6 +123,15 @@ namespace SharpChat.Users {
                 throw new ArgumentNullException(nameof(callback));
             lock(Sync)
                 callback.Invoke(Users);
+        }
+
+        public void GetUsers(Func<IUser, bool> predicate, Action<IEnumerable<IUser>> callback) {
+            if(predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            lock(Sync)
+                callback.Invoke(Users.Where(predicate));
         }
 
         public IUser Connect(IUserAuthResponse uar) {

@@ -26,9 +26,6 @@ namespace SharpChat.Messages.Storage {
             Password = evt.Channel.Password;
         }
 
-        public bool VerifyPassword(string password)
-            => false;
-
         public bool Equals(IChannel other)
             => other != null && Name.Equals(other.Name, StringComparison.InvariantCultureIgnoreCase);
 

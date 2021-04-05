@@ -1,14 +1,14 @@
 ﻿using System;
 
 namespace SharpChat.Protocol.IRC.ServerCommands {
-    public class PongCommand : ServerCommand {
+    public class ServerPongCommand : ServerCommand {
         public const string NAME = @"PONG";
 
         public override string CommandName => NAME;
 
         private string Argument { get; }
 
-        public PongCommand(string argument) {
+        public ServerPongCommand(string argument) {
             Argument = argument ?? throw new ArgumentNullException(nameof(argument));
         }
 
