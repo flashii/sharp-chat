@@ -52,6 +52,16 @@ namespace SharpChat.Channels {
             return c.HasSession(session);
         }
 
+        public int CountUsers(IChannel channel) {
+            if(channel == null)
+                throw new ArgumentNullException(nameof(channel));
+
+            if(Channels.GetChannel(channel) is not Channel c)
+                return 0;
+
+            return c.CountUsers();
+        }
+
         public int CountUserSessions(IChannel channel, IUser user) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));

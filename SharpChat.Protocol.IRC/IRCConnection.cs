@@ -1,5 +1,6 @@
 ﻿using SharpChat.Events;
 using SharpChat.Protocol.IRC.Replies;
+using SharpChat.Protocol.IRC.ServerCommands;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -17,10 +18,31 @@ namespace SharpChat.Protocol.IRC {
         public Socket Socket { get; }
         private readonly object Sync = new object();
 
+        public bool IsAuthenticating { get; set; }
+        public bool HasAuthenticated { get; set; }
+        public string Password { get; set; }
+
         public IRCConnection(Socket sock) {
             Socket = sock ?? throw new ArgumentNullException(nameof(sock));
             ConnectionId = @"IRC!" + RNG.NextString(ID_LENGTH);
             RemoteAddress = sock.RemoteEndPoint is IPEndPoint ipep ? ipep.Address : IPAddress.None;
+        }
+
+        public void SendCommand(IServerCommand command) {
+            lock(Sync) {
+                StringBuilder sb = new StringBuilder();
+                sb.Append(IRCServer.PREFIX);
+                sb.Append(@"irc.railgun.sh"); // server prefix
+                sb.Append(' ');
+                sb.Append(command.CommandName);
+                sb.Append(' ');
+                sb.Append(IRCServer.PREFIX); // not sure if it's always like this, assuming it is
+                sb.Append(@"irc.railgun.sh");
+                sb.Append(' ');
+                sb.Append(command.GetLine());
+                sb.Append(IServerCommand.CRLF);
+                Send(sb);
+            }
         }
 
         public void SendReply(IServerReply reply) {
@@ -35,13 +57,19 @@ namespace SharpChat.Protocol.IRC {
                 sb.Append(' ');
                 sb.Append(reply.GetLine());
                 sb.Append(IServerReply.CRLF);
-
-                Socket.Send(Encoding.UTF8.GetBytes(sb.ToString()));
+                Send(sb);
             }
+        }
+
+        private void Send(object obj) {
+            lock(Sync)
+                Socket.Send(Encoding.UTF8.GetBytes(obj.ToString()));
         }
 
         public void Close() {
             lock(Sync) {
+                Password = null;
+
                 try {
                     Socket.Shutdown(SocketShutdown.Both);
                 } finally {

@@ -6,6 +6,7 @@ using System;
 namespace SharpChat.Messages.Storage {
     public class MemoryMessageChannel : IChannel, IEventHandler {
         public string Name { get; private set; }
+        public string Topic { get; private set; }
         public bool IsTemporary { get; private set; }
         public int MinimumRank { get; private set; }
         public bool AutoJoin { get; private set; }
@@ -16,6 +17,7 @@ namespace SharpChat.Messages.Storage {
 
         public MemoryMessageChannel(IEvent evt) {
             Name = evt.Channel.Name;
+            Topic = evt.Channel.Topic;
             IsTemporary = evt.Channel.IsTemporary;
             MinimumRank = evt.Channel.MinimumRank;
             AutoJoin = evt.Channel.AutoJoin;

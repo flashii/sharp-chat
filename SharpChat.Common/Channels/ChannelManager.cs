@@ -36,6 +36,7 @@ namespace SharpChat.Channels {
                 foreach(IChannel channel in Channels) {
                     if(channelNames.Contains(channel.Name)) {
                         using IConfig config = Config.ScopeTo($@"channels:{channel.Name}");
+                        string topic = config.ReadValue(@"topic");
                         bool autoJoin = config.ReadValue(@"autoJoin", DefaultChannel == null || DefaultChannel == channel);
                         string password = null;
                         int? minRank = null;
@@ -50,7 +51,7 @@ namespace SharpChat.Channels {
                             maxCapacity = config.SafeReadValue(@"maxCapacity", 0u);
                         }
 
-                        Update(channel, null, false, minRank, password, autoJoin, maxCapacity);
+                        Update(channel, null, topic, false, minRank, password, autoJoin, maxCapacity);
                     } else if(!channel.IsTemporary) // Not in config == temporary
                         Update(channel, temporary: true);
                 }
@@ -59,6 +60,7 @@ namespace SharpChat.Channels {
                     if(Channels.Any(x => x.Name == channelName))
                         continue;
                     using IConfig config = Config.ScopeTo($@"channels:{channelName}");
+                    string topic = config.ReadValue(@"topic");
                     bool autoJoin = config.ReadValue(@"autoJoin", DefaultChannel == null || DefaultChannel.Name == channelName);
                     string password = null;
                     int minRank = 0;
@@ -73,7 +75,7 @@ namespace SharpChat.Channels {
                         maxCapacity = config.SafeReadValue(@"maxCapacity", 0u);
                     }
 
-                    Create(Bot, channelName, false, minRank, password, autoJoin, maxCapacity);
+                    Create(Bot, channelName, topic, false, minRank, password, autoJoin, maxCapacity);
                 }
 
                 if(DefaultChannel == null || DefaultChannel.IsTemporary || !channelNames.Contains(DefaultChannel.Name))
@@ -149,6 +151,7 @@ namespace SharpChat.Channels {
         public IChannel Create(
             IUser owner,
             string name,
+            string topic = null,
             bool temp = true,
             int minRank = 0,
             string password = null,
@@ -160,7 +163,7 @@ namespace SharpChat.Channels {
             ValidateName(name);
 
             lock(Sync) {
-                Channel channel = new Channel(name, temp, minRank, password, autoJoin, maxCapacity, owner);
+                Channel channel = new Channel(name, topic, temp, minRank, password, autoJoin, maxCapacity, owner);
                 Channels.Add(channel);
                 
                 // Should this remain?
@@ -178,7 +181,16 @@ namespace SharpChat.Channels {
             }
         }
 
-        public void Update(IChannel channel, string name = null, bool? temporary = null, int? minRank = null, string password = null, bool? autoJoin = null, uint? maxCapacity = null) {
+        public void Update(
+            IChannel channel,
+            string name = null,
+            string topic = null,
+            bool? temporary = null,
+            int? minRank = null,
+            string password = null,
+            bool? autoJoin = null,
+            uint? maxCapacity = null
+        ) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));
             if(!Channels.Contains(channel))
@@ -190,6 +202,9 @@ namespace SharpChat.Channels {
 
                 if(nameUpdated)
                     ValidateName(name);
+
+                if(topic != null && channel.Topic.Equals(topic))
+                    topic = null;
 
                 if(temporary.HasValue && channel.IsTemporary == temporary.Value)
                     temporary = null;
@@ -206,7 +221,7 @@ namespace SharpChat.Channels {
                 if(maxCapacity.HasValue && channel.MaxCapacity == maxCapacity.Value)
                     maxCapacity = null;
 
-                Dispatcher.DispatchEvent(this, new ChannelUpdateEvent(channel, Bot, name, temporary, minRank, password, autoJoin, maxCapacity));
+                Dispatcher.DispatchEvent(this, new ChannelUpdateEvent(channel, Bot, name, topic, temporary, minRank, password, autoJoin, maxCapacity));
 
                 // Users that no longer have access to the channel/gained access to the channel by the hierarchy change should receive delete and create packets respectively
                 // TODO: should be moved to the usermanager probably
@@ -234,6 +249,13 @@ namespace SharpChat.Channels {
                     return c;
                 return Channels.FirstOrDefault(c => c.Equals(channel));
             }
+        }
+
+        public void GetChannels(Action<IEnumerable<IChannel>> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            lock(Sync)
+                callback.Invoke(Channels);
         }
 
         public void GetChannels(IEnumerable<string> names, Action<IEnumerable<IChannel>> callback) {
@@ -272,6 +294,7 @@ namespace SharpChat.Channels {
 
                 Channels.Add(new Channel(
                     cce.Name,
+                    cce.Topic,
                     cce.IsTemporary,
                     cce.MinimumRank,
                     cce.Password,

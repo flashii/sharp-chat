@@ -8,6 +8,7 @@ using System.Linq;
 namespace SharpChat.Channels {
     public class Channel : IChannel, IEventHandler {
         public string Name { get; private set; }
+        public string Topic { get; private set; }
         public bool IsTemporary { get; private set; }
         public int MinimumRank { get; private set; }
         public bool AutoJoin { get; private set; }
@@ -18,12 +19,16 @@ namespace SharpChat.Channels {
         private HashSet<long> Users { get; } = new HashSet<long>();
         private HashSet<(string sessionId, long userId)> Sessions { get; } = new HashSet<(string, long)>();
 
+        public bool HasTopic
+            => !string.IsNullOrWhiteSpace(Topic);
+
         public string Password { get; private set; } = string.Empty;
         public bool HasPassword
             => !string.IsNullOrWhiteSpace(Password);
 
         public Channel(
             string name,
+            string topic = null,
             bool temp = false,
             int minimumRank = 0,
             string password = null,
@@ -32,6 +37,7 @@ namespace SharpChat.Channels {
             IUser owner = null
         ) {
             Name = name;
+            Topic = topic;
             IsTemporary = temp;
             MinimumRank = minimumRank;
             Password = password ?? string.Empty;
@@ -68,6 +74,11 @@ namespace SharpChat.Channels {
                 callable(Users);
         }
 
+        public int CountUsers() {
+            lock(Sync)
+                return Users.Count;
+        }
+
         public int CountUserSessions(IUser user) {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
@@ -81,6 +92,8 @@ namespace SharpChat.Channels {
                     case ChannelUpdateEvent update: // Owner?
                         if(update.HasName)
                             Name = update.Name;
+                        if(update.HasTopic)
+                            Topic = update.Topic;
                         if(update.IsTemporary.HasValue)
                             IsTemporary = update.IsTemporary.Value;
                         if(update.MinimumRank.HasValue)

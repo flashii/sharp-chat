@@ -5,14 +5,14 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SharpChat.Protocol.IRC.Replies {
-    public class WelcomeReply : ServerReply {
-        public const int CODE = 1;
+    public class ListUserUnknownReply : ServerReply {
+        public const int CODE = 253;
 
         public override int ReplyCode => CODE;
 
         protected override string BuildLine() {
-            // todo: allow customisation
-            return @":Welcome to SharpChat's IRC endpoint flash!flash@irc.railgun.sh";
+            // todo: count unknown connections? whatever the fuck that means
+            return @"0 :unknown connection(s)";
         }
     }
 }

@@ -5,14 +5,14 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SharpChat.Protocol.IRC.Replies {
-    public class WelcomeReply : ServerReply {
-        public const int CODE = 1;
+    public class ListUserMeReply : ServerReply {
+        public const int CODE = 255;
 
         public override int ReplyCode => CODE;
 
         protected override string BuildLine() {
-            // todo: allow customisation
-            return @":Welcome to SharpChat's IRC endpoint flash!flash@irc.railgun.sh";
+            // todo: count local users and perhaps actually expose multi server lol
+            return @":I have 500 users and 2 servers";
         }
     }
 }

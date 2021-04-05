@@ -1,9 +1,10 @@
-﻿using SharpChat.Protocol.IRC.Commands;
-using SharpChat.Protocol.IRC.Commands.Modern;
-using SharpChat.Protocol.IRC.Commands.RFC1459;
-using SharpChat.Protocol.IRC.Commands.RFC2810;
+﻿using SharpChat.Protocol.IRC.ClientCommands;
+using SharpChat.Protocol.IRC.ClientCommands.Modern;
+using SharpChat.Protocol.IRC.ClientCommands.RFC1459;
+using SharpChat.Protocol.IRC.ClientCommands.RFC2810;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -19,17 +20,19 @@ namespace SharpChat.Protocol.IRC {
         private Socket Socket { get; set; }
 
         private Dictionary<Socket, IRCConnection> Connections { get; } = new Dictionary<Socket, IRCConnection>();
-        private IReadOnlyDictionary<string, ICommand> Commands { get; }
+        private IReadOnlyDictionary<string, IClientCommand> Commands { get; }
 
         private bool IsRunning { get; set; }
 
         private byte[] Buffer { get; } = new byte[BUFFER_SIZE];
 
+        private readonly object Sync = new object();
+
         public IRCServer(Context ctx) {
             Context = ctx ?? throw new ArgumentNullException(nameof(ctx));
 
-            Dictionary<string, ICommand> handlers = new Dictionary<string, ICommand>();
-            void addHandler(ICommand handler) {
+            Dictionary<string, IClientCommand> handlers = new Dictionary<string, IClientCommand>();
+            void addHandler(IClientCommand handler) {
                 handlers.Add(handler.CommandName, handler);
             };
 
@@ -42,7 +45,7 @@ namespace SharpChat.Protocol.IRC {
             addHandler(new JoinCommand());
             addHandler(new KickCommand());
             addHandler(new KillCommand());
-            addHandler(new ListCommand());
+            addHandler(new ListCommand(Context.Channels, Context.ChannelUsers));
             addHandler(new ListUsersCommand());
             addHandler(new MessageOfTheDayCommand());
             addHandler(new ModeCommand());
@@ -58,7 +61,7 @@ namespace SharpChat.Protocol.IRC {
             addHandler(new SummonCommand());
             addHandler(new TimeCommand());
             addHandler(new TopicCommand());
-            addHandler(new UserCommand());
+            addHandler(new UserCommand(Context.Users, Context.Sessions, Context.DataProvider));
             addHandler(new UserHostCommand());
             addHandler(new VersionCommand());
             addHandler(new WAllOpsCommand());
@@ -94,38 +97,42 @@ namespace SharpChat.Protocol.IRC {
         }
 
         private void Worker() {
-            while(IsRunning) {
-                try {
-                    if(Socket.Poll(1000000, SelectMode.SelectRead)) {
-                        IRCConnection conn = new IRCConnection(Socket.Accept());
-                        Connections.Add(conn.Socket, conn);
-                        conn.SendReply(new Replies.WelcomeReply());
-                    }
-
-                    if(Connections.Count < 1) {
-                        Thread.Sleep(1000);
-                        continue;
-                    }
-
-                    List<Socket> sockets = new List<Socket>(Connections.Keys);
-                    Socket.Select(sockets, null, null, 5000000);
-
-                    foreach(Socket sock in sockets) {
-                        try {
-                            int read = sock.Receive(Buffer);
-                            string[] lines = Encoding.UTF8.GetString(Buffer, 0, read).Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                            foreach(string line in lines)
-                                OnReceive(Connections[sock], line);
-                        } catch(SocketException ex) {
-                            Logger.Write($@"[IRC] Socket Error: {ex}");
+            lock(Sync)
+                while(IsRunning)
+                    try {
+                        if(Socket.Poll(1000000, SelectMode.SelectRead)) {
+                            IRCConnection conn = new IRCConnection(Socket.Accept());
+                            Connections.Add(conn.Socket, conn);
                         }
-                    }
 
-                    // check pings
-                } catch(Exception ex) {
-                    Logger.Write($@"[IRC] {ex}");
-                }
-            }
+                        if(Connections.Count < 1) {
+                            Thread.Sleep(1000);
+                            continue;
+                        }
+
+                        List<Socket> sockets = new List<Socket>(Connections.Keys);
+                        Socket.Select(sockets, null, null, 5000000);
+
+                        foreach(Socket sock in sockets) {
+                            try {
+                                int read = sock.Receive(Buffer);
+                                string[] lines = Encoding.UTF8.GetString(Buffer, 0, read).Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                                foreach(string line in lines)
+                                    OnReceive(Connections[sock], line);
+                            } catch(SocketException ex) {
+                                Logger.Write($@"[IRC] Socket Error: {ex}");
+                            }
+                        }
+
+                        // check pings
+
+                        // this doesn't really work very well lolw
+                        IEnumerable<Socket> dead = Connections.Values.Where(c => !c.IsAvailable).Select(c => c.Socket).ToArray();
+                        foreach(Socket sock in dead)
+                            Connections.Remove(sock);
+                    } catch(Exception ex) {
+                        Logger.Write($@"[IRC] {ex}");
+                    }
         }
 
         private void OnReceive(IRCConnection conn, string line) {
@@ -178,10 +185,8 @@ namespace SharpChat.Protocol.IRC {
 
             args.RemoveAll(string.IsNullOrWhiteSpace);
 
-            Logger.Debug($@"{prefix} {command} {string.Join(' ', args)}");
-
             if(Commands.ContainsKey(command))
-                Commands[command].HandleCommand(new CommandArgs());
+                Commands[command].HandleCommand(new ClientCommandContext(conn, args));
         }
 
         private bool IsDisposed;
@@ -197,7 +202,13 @@ namespace SharpChat.Protocol.IRC {
             IsDisposed = true;
 
             IsRunning = false;
-            Socket?.Dispose();
+
+            if(Socket != null)
+                lock(Sync) {
+                    // kill all connections
+
+                    Socket.Dispose();
+                }
         }
     }
 }

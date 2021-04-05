@@ -57,7 +57,7 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
                 return;
 
             Action<Exception> exceptionHandler = new Action<Exception>(ex => {
-                Logger.Debug($@"<{ctx.Connection.RemoteAddress}> Auth fail: {ex.Message}");
+                Logger.Debug($@"[{ctx.Connection}] Auth fail: {ex.Message}");
                 ctx.Connection.SendPacket(new AuthFailPacket(AuthFailReason.AuthInvalid));
                 ctx.Connection.Close();
             });
@@ -85,6 +85,7 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
 
                         ctx.Connection.SendPacket(new WelcomeMessagePacket(Sender, $@"Welcome to Flashii Chat, {user.UserName}!"));
 
+                        // TODO: this needs generalisation
                         if(File.Exists(WELCOME)) {
                             IEnumerable<string> lines = File.ReadAllLines(WELCOME).Where(x => !string.IsNullOrWhiteSpace(x));
                             string line = lines.ElementAtOrDefault(RNG.Next(lines.Count()));

@@ -9,6 +9,7 @@ namespace SharpChat.Events {
 
         public string PreviousName { get; }
         public string Name { get; }
+        public string Topic { get; }
         public bool? IsTemporary { get; }
         public int? MinimumRank { get; }
         public string Password { get; }
@@ -16,12 +17,14 @@ namespace SharpChat.Events {
         public uint? MaxCapacity { get; }
 
         public bool HasName => Name != null;
+        public bool HasTopic => Topic != null;
         public bool HasPassword => Password != null;
 
         public ChannelUpdateEvent(
             IChannel channel,
             IUser user,
             string name = null,
+            string topic = null,
             bool? temp = null,
             int? minRank = null,
             string password = null,
@@ -30,6 +33,7 @@ namespace SharpChat.Events {
         ) : base(channel ?? throw new ArgumentNullException(nameof(channel)), user) {
             PreviousName = channel.Name;
             Name = name;
+            Topic = topic;
             IsTemporary = temp;
             MinimumRank = minRank;
             Password = password;

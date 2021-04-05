@@ -6,6 +6,7 @@ using System;
 namespace SharpChat.Messages.Storage {
     public class ADOMessageChannel : IChannel {
         public string Name { get; }
+        public string Topic => string.Empty;
         public bool IsTemporary => true;
         public int MinimumRank => 0;
         public bool AutoJoin => false;

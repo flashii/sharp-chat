@@ -6,6 +6,7 @@ namespace SharpChat.Events {
         public const string TYPE = @"channel:create";
 
         public string Name { get; }
+        public string Topic { get; }
         public bool IsTemporary { get; }
         public int MinimumRank { get; }
         public string Password { get; }
@@ -15,6 +16,7 @@ namespace SharpChat.Events {
         public ChannelCreateEvent(IChannel channel)
             : base(null, channel.Owner) {
             Name = channel.Name;
+            Topic = channel.Topic;
             IsTemporary = channel.IsTemporary;
             MinimumRank = channel.MinimumRank;
             Password = channel.Password;

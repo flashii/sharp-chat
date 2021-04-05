@@ -5,14 +5,14 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SharpChat.Protocol.IRC.Replies {
-    public class WelcomeReply : ServerReply {
-        public const int CODE = 1;
+    public class MotdStartReply : ServerReply {
+        public const int CODE = 375;
 
         public override int ReplyCode => CODE;
 
         protected override string BuildLine() {
-            // todo: allow customisation
-            return @":Welcome to SharpChat's IRC endpoint flash!flash@irc.railgun.sh";
+            // todo: unstatic address
+            return @":- irc.railgun.sh Message of the day -";
         }
     }
 }

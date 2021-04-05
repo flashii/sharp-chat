@@ -44,6 +44,7 @@ namespace SharpChat.Protocol.SockChat.Commands {
                 createChan = Channels.Create(
                     ctx.User,
                     createChanName,
+                    null,
                     !ctx.User.Can(UserPermissions.SetChannelPermanent),
                     rank
                 );
