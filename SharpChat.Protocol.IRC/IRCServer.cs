@@ -35,6 +35,7 @@ namespace SharpChat.Protocol.IRC {
 
         public IRCServer(Context ctx) {
             Context = ctx ?? throw new ArgumentNullException(nameof(ctx));
+            Context.AddEventHandler(this);
 
             Dictionary<string, IClientCommand> handlers = new Dictionary<string, IClientCommand>();
             void addHandler(IClientCommand handler) {
@@ -199,19 +200,28 @@ namespace SharpChat.Protocol.IRC {
         public void HandleEvent(object sender, IEvent evt) {
             lock(Sync)
                 switch(evt) {
+                    // these events need revising
+                    case ChannelUserJoinEvent cuje:
+                        UserJoinChannel(cuje.Channel, cuje.SessionId);
+                        break;
                     case ChannelSessionJoinEvent csje:
-                        ISession csjes = Context.Sessions.GetLocalSession(csje.SessionId);
-                        if(csjes == null || csjes.Connection is not IRCConnection csjec)
-                            break;
-                        IChannel csjech = Context.Channels.GetChannel(csje.Channel);
-                        csjec.SendCommand(new ServerJoinCommand(csjech));
-                        if(string.IsNullOrEmpty(csjech.Topic))
-                            csjec.SendReply(new NoTopicReply(csjech));
-                        else
-                            csjec.SendReply(new TopicReply(csjech));
-
+                        UserJoinChannel(csje.Channel, csje.SessionId);
                         break;
                 }
+        }
+
+        private void UserJoinChannel(IChannel channel, string sessionId) {
+            ISession csjes = Context.Sessions.GetLocalSession(sessionId);
+            if(csjes == null || csjes.Connection is not IRCConnection csjec)
+                return;
+            IChannel csjech = Context.Channels.GetChannel(channel);
+            csjec.SendCommand(new ServerJoinCommand(csjech));
+            if(string.IsNullOrEmpty(csjech.Topic))
+                csjec.SendReply(new NoTopicReply(csjech));
+            else
+                csjec.SendReply(new TopicReply(csjech));
+            Context.ChannelUsers.GetUsers(csjech, users => NamesReply.SendBatch(csjec, csjech, users));
+            csjec.SendReply(new EndOfNamesReply(csjech));
         }
 
         private bool IsDisposed;

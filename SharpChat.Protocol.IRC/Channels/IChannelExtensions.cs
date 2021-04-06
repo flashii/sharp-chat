@@ -1,16 +1,18 @@
 ﻿using SharpChat.Channels;
-using System.Text;
 
 namespace SharpChat.Protocol.IRC.Channels {
     public static class IChannelExtensions {
         public static string GetIRCName(this IChannel channel) {
-            StringBuilder sb = new StringBuilder();
+            return $@"#{channel.Name.ToLowerInvariant()}"; 
+        }
 
-            // expand this when there's more channel types
-            sb.Append('#');
-            sb.Append(channel.Name.ToLowerInvariant());
-
-            return sb.ToString(); 
+        public static char GetIRCNamesPrefix(this IChannel channel) {
+            // maybe?
+            //if(channel.IsInviteOnly)
+            //    return '*';
+            if(channel.HasPassword)
+                return '@';
+            return '=';
         }
     }
 }
