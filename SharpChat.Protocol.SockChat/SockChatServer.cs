@@ -1,4 +1,5 @@
-﻿using SharpChat.Protocol.SockChat.Commands;
+﻿using SharpChat.Events;
+using SharpChat.Protocol.SockChat.Commands;
 using SharpChat.Protocol.SockChat.PacketHandlers;
 using SharpChat.Protocol.SockChat.Packets;
 using SharpChat.RateLimiting;
@@ -11,22 +12,19 @@ using System.Net;
 
 namespace SharpChat.Protocol.SockChat {
     public class SockChatServer : IServer {
-        private const int VERSION =
-#if DEBUG
-            2;
-#else
-            1;
-#endif
-
         public const int DEFAULT_MAX_CONNECTIONS = 5;
 
         private Context Context { get; }
         private FleckWebSocketServer Server { get; set; }
 
+        private List<SockChatConnection> Connections { get; } = new List<SockChatConnection>();
         private IReadOnlyDictionary<ClientPacketId, IPacketHandler> PacketHandlers { get; }
+
+        private readonly object Sync = new object();
 
         public SockChatServer(Context ctx) {
             Context = ctx ?? throw new ArgumentNullException(nameof(ctx));
+            Context.AddEventHandler(this);
 
             Dictionary<ClientPacketId, IPacketHandler> handlers = new Dictionary<ClientPacketId, IPacketHandler>();
             void addHandler(IPacketHandler handler) {
@@ -34,7 +32,7 @@ namespace SharpChat.Protocol.SockChat {
             };
 
             addHandler(new PingPacketHandler(Context.Sessions));
-            addHandler(new AuthPacketHandler(Context.Sessions, Context.Users, Context.Channels, Context.ChannelUsers, Context.Messages, Context.DataProvider, Context.Bot, VERSION));
+            addHandler(new AuthPacketHandler(Context.Sessions, Context.Users, Context.Channels, Context.ChannelUsers, Context.Messages, Context.DataProvider, Context.Bot));
             addHandler(new MessageSendPacketHandler(Context.Users, Context.Channels, Context.ChannelUsers, Context.Messages, Context.Bot, new ICommand[] {
                 new JoinCommand(Context.Channels, Context.ChannelUsers, Context.Sessions),
                 new AFKCommand(Context.Users),
@@ -58,11 +56,8 @@ namespace SharpChat.Protocol.SockChat {
                 new SilenceUserCommand(Context.Users, Context.Bot),
                 new UnsilenceUserCommand(Context.Users, Context.Bot),
             }));
-
-            if(VERSION >= 2) {
-                addHandler(new CapabilitiesPacketHandler(Context.Sessions));
-                addHandler(new TypingPacketHandler());
-            }
+            addHandler(new CapabilitiesPacketHandler(Context.Sessions));
+            addHandler(new TypingPacketHandler());
 
             PacketHandlers = handlers;
 
@@ -86,19 +81,23 @@ namespace SharpChat.Protocol.SockChat {
             });
         }
 
-        private static void OnOpen(SockChatConnection conn) {
+        private void OnOpen(SockChatConnection conn) {
             Logger.Debug($@"[{conn}] Connection opened");
+            lock(Sync)
+                Connections.Add(conn);
         }
 
         private void OnClose(SockChatConnection conn) {
             Logger.Debug($@"[{conn}] Connection closed");
-            Context.Sessions.Destroy(conn);
-            Context.RateLimiter.ClearConnection(conn);
+            lock(Sync) {
+                Context.Sessions.Destroy(conn);
+                Context.RateLimiter.ClearConnection(conn);
+                Connections.Remove(conn);
+            }
         }
 
-        private void OnError(SockChatConnection conn, Exception ex) {
-            ISession sess = Context.Sessions.GetLocalSession(conn);
-            Logger.Write($@"[{sess} {conn}] {ex}");
+        private static void OnError(SockChatConnection conn, Exception ex) {
+            Logger.Write($@"[{conn}] {ex}");
         }
 
         private void OnMessage(SockChatConnection conn, string msg) {
@@ -132,6 +131,13 @@ namespace SharpChat.Protocol.SockChat {
 
             if(PacketHandlers.TryGetValue(packetId, out IPacketHandler handler))
                 handler.HandlePacket(new PacketHandlerContext(args, sess, conn));
+        }
+
+        public void HandleEvent(object sender, IEvent evt) {
+            lock(Sync)
+                switch(evt) {
+                    //
+                }
         }
 
         private bool IsDisposed;

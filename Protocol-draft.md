@@ -227,11 +227,6 @@ Informs the client that authentication has succeeded.
         <td></td>
     </tr>
     <tr>
-        <td><code>int</code></td>
-        <td>Extensions version number. If this field is missing, version 1 is implied.</td>
-        <td>Added in Version 2</td>
-    </tr>
-    <tr>
         <td><code>session id</code></td>
         <td>ID of the currently active session</td>
         <td>Added in Version 2</td>

@@ -23,7 +23,6 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
         private MessageManager Messages { get; }
         private IDataProvider DataProvider { get; }
         private IUser Sender { get; }
-        private int Version { get; }
 
         public AuthPacketHandler(
             SessionManager sessions,
@@ -32,8 +31,7 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
             ChannelUserRelations channelUsers,
             MessageManager messages,
             IDataProvider dataProvider,
-            IUser sender,
-            int version
+            IUser sender
         ) {
             Sessions = sessions ?? throw new ArgumentNullException(nameof(sessions));
             Users = users ?? throw new ArgumentNullException(nameof(users));
@@ -42,7 +40,6 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
             Messages = messages ?? throw new ArgumentNullException(nameof(messages));
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
-            Version = version;
         }
 
         public void HandlePacket(PacketHandlerContext ctx) {
@@ -103,7 +100,7 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
                             //ctx.Chat.DispatchEvent(this, new UserConnectEvent(chan, user));
                         }
 
-                        ctx.Connection.SendPacket(new AuthSuccessPacket(user, chan, sess, Version, Messages.TextMaxLength));
+                        ctx.Connection.SendPacket(new AuthSuccessPacket(user, chan, sess, Messages.TextMaxLength));
                         ChannelUsers.GetUsers(chan, u => ctx.Connection.SendPacket(new ContextUsersPacket(u.Except(new[] { user }).OrderByDescending(u => u.Rank))));
 
                         Messages.GetMessages(chan, m => {

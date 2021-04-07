@@ -16,7 +16,7 @@ using System.Text;
 using System.Threading;
 
 namespace SharpChat.Protocol.IRC {
-    public class IRCServer : IServer, IEventHandler {
+    public class IRCServer : IServer {
         private const int BUFFER_SIZE = 2048;
 
         public const char PREFIX = ':';
@@ -145,6 +145,8 @@ namespace SharpChat.Protocol.IRC {
             Logger.Debug($@"[{conn}] {line}");
 
             ISession session = Context.Sessions.GetLocalSession(conn);
+
+            // do rate limiting
 
             string prefix = null;
             string command = null;
