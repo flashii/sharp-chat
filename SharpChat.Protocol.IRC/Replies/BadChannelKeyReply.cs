@@ -3,7 +3,7 @@ using SharpChat.Protocol.IRC.Channels;
 using System;
 
 namespace SharpChat.Protocol.IRC.Replies {
-    public class BadChannelKeyReply : ServerReply {
+    public class BadChannelKeyReply : Reply {
         public const int CODE = 475;
 
         public override int ReplyCode => CODE;

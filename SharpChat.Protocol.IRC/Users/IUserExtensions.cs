@@ -29,5 +29,13 @@ namespace SharpChat.Protocol.IRC.Users {
 
             return sb.ToString();
         }
+
+        public static string GetIRCMask(this IUser user) {
+            return $@"{user.GetIRCName()}!{user.UserName}";
+        }
+
+        public static string GetIRCMask(this IUser user, IRCServer server) {
+            return $@"{user.GetIRCMask()}@{server.Name}";
+        }
     }
 }

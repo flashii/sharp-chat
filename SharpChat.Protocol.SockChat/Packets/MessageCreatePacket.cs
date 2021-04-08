@@ -11,9 +11,6 @@ namespace SharpChat.Protocol.SockChat.Packets {
         public MessageCreatePacket(MessageCreateEvent create)
             : this(create, create.Text, create.IsAction) { }
 
-        public MessageCreatePacket(MessageUpdateEventWithData muewd)
-            : this(muewd, muewd.HasText ? muewd.Text : muewd.Message.Text, muewd.Message.IsAction) { }
-
         private MessageCreatePacket(IEvent evt, string text, bool isAction) {
             Event = evt ?? throw new ArgumentNullException(nameof(evt));
             IsAction = isAction;

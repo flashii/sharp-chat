@@ -1,7 +1,7 @@
 ﻿using System.Text;
 
 namespace SharpChat.Protocol.IRC.Replies {
-    public class ISupportReply : ServerReply {
+    public class ISupportReply : Reply {
         public const int CODE = 5;
 
         public override int ReplyCode => CODE;
@@ -11,7 +11,7 @@ namespace SharpChat.Protocol.IRC.Replies {
 
             // todo: make this actually mean things
             sb.Append(@"STD=draft03 ");
-            sb.Append(@"PREFIX=(ohv)@%+ ");
+            sb.Append(@"PREFIX=(qaohv)~&@%+ ");
             sb.Append(@"CHANMODES=Ibe,k,l,Tcimnpst ");
             sb.Append(@"CHANTYPES=# ");
             sb.Append(@"CHANLIMIT=#:10 INEVEX=I EXCEPTS=e ");

@@ -3,7 +3,7 @@ using SharpChat.Protocol.IRC.Channels;
 using System;
 
 namespace SharpChat.Protocol.IRC.Replies {
-    public class TopicReply : ServerReply {
+    public class TopicReply : Reply {
         public const int CODE = 332;
 
         public override int ReplyCode => CODE;

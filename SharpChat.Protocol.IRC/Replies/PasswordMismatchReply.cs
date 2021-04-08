@@ -1,5 +1,5 @@
 ﻿namespace SharpChat.Protocol.IRC.Replies {
-    public class PasswordMismatchReply : ServerReply {
+    public class PasswordMismatchReply : Reply {
         public const int CODE = 464;
         public const string LINE = @":Authentication failed.";
 

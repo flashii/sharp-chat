@@ -9,16 +9,18 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
 
         public string CommandName => NAME;
 
+        private IRCServer Server { get; }
         private SessionManager Sessions { get; }
 
-        public PingCommand(SessionManager sessions) {
+        public PingCommand(IRCServer server, SessionManager sessions) {
+            Server = server ?? throw new ArgumentNullException(nameof(server));
             Sessions = sessions ?? throw new ArgumentNullException(nameof(sessions));
         }
 
         public void HandleCommand(ClientCommandContext ctx) {
             if(ctx.HasSession && ctx.Arguments.Any()) { // only process pings when we have a session
                 Sessions.DoKeepAlive(ctx.Session);
-                ctx.Connection.SendCommand(new ServerPongCommand(ctx.Arguments.FirstOrDefault()));
+                ctx.Connection.SendCommand(new ServerPongCommand(Server, ctx.Arguments.FirstOrDefault()));
             }
         }
     }

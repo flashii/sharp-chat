@@ -56,6 +56,8 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
                     ctx.Connection.Password = null;
                     ctx.Connection.HasAuthenticated = true;
 
+                    Logger.Debug(@"here 1");
+
                     DataProvider.BanClient.CheckBan(res.UserId, ctx.Connection.RemoteAddress, ban => {
                         if(ban.IsPermanent || ban.Expires > DateTimeOffset.Now) {
                             // should probably include the time
@@ -65,7 +67,10 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
                             return;
                         }
 
+                        Logger.Debug(@"here 2");
+
                         IUser user = Users.Connect(res);
+                        Logger.Debug(@"here 3");
 
                         // Enforce a maximum amount of connections per user
                         if(Sessions.GetAvailableSessionCount(user) < 1) {
@@ -75,7 +80,9 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
                             return;
                         }
 
+                        Logger.Debug(@"here 4");
                         ISession sess = Sessions.Create(ctx.Connection, user);
+                        Logger.Debug(@"here 5");
 
                         ctx.Connection.SendReply(new WelcomeReply());
                         ctx.Connection.SendReply(new YourHostReply());
@@ -92,9 +99,8 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
                                 ctx.Connection.SendReply(new MotdReply(line));
 
                             ctx.Connection.SendReply(new MotdEndReply());
-                        } else {
+                        } else
                             ctx.Connection.SendReply(new NoMotdReply());
-                        }
 
                         // are these necessary?
                         ctx.Connection.SendReply(new ListUserClientReply());

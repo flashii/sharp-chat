@@ -102,6 +102,28 @@ namespace SharpChat.Channels {
             Users.GetUsers(ids, callback);
         }
 
+        public void GetUsers(IUser user, Action<IEnumerable<IUser>> callback) {
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            lock(Sync) {
+                HashSet<IUser> all = new HashSet<IUser>();
+
+                Channels.GetChannels(channels => {
+                    foreach(IChannel channel in channels) {
+                        GetUsers(channel, users => {
+                            foreach(IUser user in users)
+                                all.Add(user);
+                        });
+                    }
+                });
+
+                callback(all);
+            }
+        }
+
         public void GetChannels(IUser user, Action<IEnumerable<IChannel>> callback) {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
@@ -197,13 +219,6 @@ namespace SharpChat.Channels {
                         IChannel channel = Channels.GetChannel(evt.Channel);
                         if(channel.IsTemporary && evt.User.Equals(channel.Owner))
                             Channels.Remove(channel);
-                        break;
-
-                    case MessageUpdateEvent mue: // there should be a v2cap that makes one packet, this is jank
-                        IMessage msg = Messages.GetMessage(mue.MessageId);
-                        evt = msg == null
-                            ? new MessageDeleteEvent(mue)
-                            : new MessageUpdateEventWithData(mue, msg);
                         break;
 
                     case SessionDestroyEvent sde:

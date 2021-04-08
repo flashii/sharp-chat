@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace SharpChat.Protocol.IRC.Replies {
-    public class MotdReply : ServerReply {
+    public class MotdReply : Reply {
         public const int CODE = 372;
 
         public override int ReplyCode => CODE;

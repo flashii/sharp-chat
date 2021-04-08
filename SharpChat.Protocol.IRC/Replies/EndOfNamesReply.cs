@@ -3,7 +3,7 @@ using SharpChat.Protocol.IRC.Channels;
 using System;
 
 namespace SharpChat.Protocol.IRC.Replies {
-    public class EndOfNamesReply : ServerReply {
+    public class EndOfNamesReply : Reply {
         public const int CODE = 366;
 
         public override int ReplyCode => CODE;

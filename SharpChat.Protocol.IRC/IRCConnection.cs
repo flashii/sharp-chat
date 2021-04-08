@@ -1,6 +1,9 @@
 ﻿using SharpChat.Events;
 using SharpChat.Protocol.IRC.Replies;
 using SharpChat.Protocol.IRC.ServerCommands;
+using SharpChat.Protocol.IRC.Users;
+using SharpChat.Sessions;
+using SharpChat.Users;
 using System;
 using System.Net;
 using System.Net.Sockets;
@@ -22,10 +25,15 @@ namespace SharpChat.Protocol.IRC {
         public bool HasAuthenticated { get; set; }
         public string Password { get; set; }
 
-        public DateTimeOffset LastPing { get; private set; }
+        public DateTimeOffset LastPing { get; set; }
 
-        public IRCConnection(Socket sock) {
+        private IRCServer Server { get; }
+
+        public ISession Session { get; set; }
+
+        public IRCConnection(IRCServer server, Socket sock) {
             Socket = sock ?? throw new ArgumentNullException(nameof(sock));
+            Server = server ?? throw new ArgumentNullException(nameof(server));
             ConnectionId = @"IRC!" + RNG.NextString(ID_LENGTH);
             RemoteAddress = sock.RemoteEndPoint is IPEndPoint ipep ? ipep.Address : IPAddress.None;
         }
@@ -33,32 +41,55 @@ namespace SharpChat.Protocol.IRC {
         public void SendCommand(IServerCommand command) {
             lock(Sync) {
                 StringBuilder sb = new StringBuilder();
+
+                // Sender
                 sb.Append(IRCServer.PREFIX);
-                sb.Append(@"irc.railgun.sh"); // server prefix
+                IUser sender = command.Sender;
+                if(sender != null) {
+                    sb.Append(sender.GetIRCName());
+                    sb.Append('!');
+                    sb.Append(sender.UserName);
+                    sb.Append('@');
+                }
+                sb.Append(Server.Name);
                 sb.Append(' ');
+
+                // Command
                 sb.Append(command.CommandName);
                 sb.Append(' ');
-                sb.Append(IRCServer.PREFIX); // not sure if it's always like this, assuming it is
-                sb.Append(@"irc.railgun.sh");
-                sb.Append(' ');
+
+                // Contents
                 sb.Append(command.GetLine());
                 sb.Append(IServerCommand.CRLF);
+
                 Send(sb);
             }
         }
 
-        public void SendReply(IServerReply reply) {
+        public void SendReply(IReply reply) {
             lock(Sync) {
                 StringBuilder sb = new StringBuilder();
+
+                // Server
                 sb.Append(IRCServer.PREFIX);
-                sb.Append(@"irc.railgun.sh"); // server prefix
+                sb.Append(Server.Name);
                 sb.Append(' ');
+
+                // Reply code
                 sb.AppendFormat(@"{0:000}", reply.ReplyCode);
                 sb.Append(' ');
-                sb.Append(@"flash"); // nickname, can be - sometimes but i don't know when
+
+                // Receiver
+                if(Session == null)
+                    sb.Append('-');
+                else
+                    sb.Append(Session.User.GetIRCName());
                 sb.Append(' ');
+
+                // Contents
                 sb.Append(reply.GetLine());
-                sb.Append(IServerReply.CRLF);
+                sb.Append(IReply.CRLF);
+
                 Send(sb);
             }
         }
@@ -78,15 +109,6 @@ namespace SharpChat.Protocol.IRC {
                     Socket.Dispose();
                 }
             }
-        }
-
-        public void HandleEvent(object sender, IEvent evt) {
-            lock(Sync)
-                switch(evt) {
-                    case SessionPingEvent spe:
-                        LastPing = spe.DateTime;
-                        break;
-                }
         }
 
         public override string ToString()

@@ -1,7 +1,7 @@
 ﻿namespace SharpChat.Protocol.IRC.Replies {
-    public class NoMotdReply : Reply {
-        public const int CODE = 422;
-        public const string LINE = @":There is no MOTD";
+    public class NoTextToSendReply : Reply {
+        public const int CODE = 412;
+        public const string LINE = @":No text to send";
 
         public override int ReplyCode => CODE;
 

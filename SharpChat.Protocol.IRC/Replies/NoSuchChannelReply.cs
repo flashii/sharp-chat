@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SharpChat.Protocol.IRC.Replies {
-    public class NoSuchChannelReply : ServerReply {
+    public class NoSuchChannelReply : Reply {
         public const int CODE = 403;
 
         public override int ReplyCode => CODE;

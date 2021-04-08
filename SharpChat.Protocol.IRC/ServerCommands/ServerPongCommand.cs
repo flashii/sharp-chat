@@ -6,14 +6,16 @@ namespace SharpChat.Protocol.IRC.ServerCommands {
 
         public override string CommandName => NAME;
 
+        private IRCServer Server { get; }
         private string Argument { get; }
 
-        public ServerPongCommand(string argument) {
+        public ServerPongCommand(IRCServer server, string argument) {
+            Server = server ?? throw new ArgumentNullException(nameof(server));
             Argument = argument ?? throw new ArgumentNullException(nameof(argument));
         }
 
         protected override string BuildLine() {
-            return Argument;
+            return $@"{IRCServer.PREFIX}{Server.Name} {Argument}";
         }
     }
 }

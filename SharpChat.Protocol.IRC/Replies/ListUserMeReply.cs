@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SharpChat.Protocol.IRC.Replies {
-    public class ListUserMeReply : ServerReply {
+    public class ListUserMeReply : Reply {
         public const int CODE = 255;
 
         public override int ReplyCode => CODE;

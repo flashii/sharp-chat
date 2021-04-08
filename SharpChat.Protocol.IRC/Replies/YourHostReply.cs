@@ -1,5 +1,5 @@
 ﻿namespace SharpChat.Protocol.IRC.Replies {
-    public class YourHostReply : ServerReply {
+    public class YourHostReply : Reply {
         public const int CODE = 2;
 
         public override int ReplyCode => CODE;

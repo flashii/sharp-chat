@@ -1,5 +1,5 @@
 ﻿namespace SharpChat.Protocol.IRC.Replies {
-    public class AlreadyRegisteredReply : ServerReply {
+    public class AlreadyRegisteredReply : Reply {
         public const int CODE = 462;
         public const string LINE = @":You're already authenticated.";
 

@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace SharpChat.Protocol.IRC.Replies {
-    public class BadChannelMaskReply : ServerReply {
+    public class BadChannelMaskReply : Reply {
         public const int CODE = 476;
 
         public override int ReplyCode => CODE;

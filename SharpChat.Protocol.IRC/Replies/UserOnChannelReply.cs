@@ -5,7 +5,7 @@ using SharpChat.Users;
 using System;
 
 namespace SharpChat.Protocol.IRC.Replies {
-    public class UserOnChannelReply : ServerReply {
+    public class UserOnChannelReply : Reply {
         public const int CODE = 443;
 
         public override int ReplyCode => CODE;

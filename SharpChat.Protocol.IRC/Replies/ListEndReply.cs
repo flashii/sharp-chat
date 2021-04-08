@@ -1,5 +1,5 @@
 ﻿namespace SharpChat.Protocol.IRC.Replies {
-    public class ListEndReply : ServerReply {
+    public class ListEndReply : Reply {
         public const int CODE = 323;
         public const string LINE = @":End of LIST";
 

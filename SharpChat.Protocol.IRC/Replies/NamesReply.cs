@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 
 namespace SharpChat.Protocol.IRC.Replies {
-    public class NamesReply : ServerReply {
+    public class NamesReply : Reply {
         public const int CODE = 353;
 
         public override int ReplyCode => CODE;

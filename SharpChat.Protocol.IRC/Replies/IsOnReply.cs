@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 
 namespace SharpChat.Protocol.IRC.Replies {
-    public class IsOnReply : ServerReply {
+    public class IsOnReply : Reply {
         public const int CODE = 303;
 
         public override int ReplyCode => CODE;

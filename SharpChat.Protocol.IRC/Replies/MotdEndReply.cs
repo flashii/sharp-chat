@@ -1,5 +1,5 @@
 ﻿namespace SharpChat.Protocol.IRC.Replies {
-    public class MotdEndReply : ServerReply {
+    public class MotdEndReply : Reply {
         public const int CODE = 376;
         public const string LINE = @":END of MOTD command";
 

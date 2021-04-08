@@ -1,11 +1,13 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Events;
+using SharpChat.Messages;
 using SharpChat.Protocol.IRC.ClientCommands;
 using SharpChat.Protocol.IRC.ClientCommands.Modern;
 using SharpChat.Protocol.IRC.ClientCommands.RFC1459;
 using SharpChat.Protocol.IRC.ClientCommands.RFC2810;
 using SharpChat.Protocol.IRC.Replies;
 using SharpChat.Protocol.IRC.ServerCommands;
+using SharpChat.Protocol.IRC.Users;
 using SharpChat.Sessions;
 using System;
 using System.Collections.Generic;
@@ -32,6 +34,8 @@ namespace SharpChat.Protocol.IRC {
         private byte[] Buffer { get; } = new byte[BUFFER_SIZE];
 
         private readonly object Sync = new object();
+
+        public string Name => @"irc.railgun.sh"; // read this from CFG
 
         public IRCServer(Context ctx) {
             Context = ctx ?? throw new ArgumentNullException(nameof(ctx));
@@ -60,8 +64,8 @@ namespace SharpChat.Protocol.IRC {
             addHandler(new NoticeCommand());
             addHandler(new PartCommand());
             addHandler(new PassCommand());
-            addHandler(new PingCommand(Context.Sessions));
-            addHandler(new PrivateMessageCommand());
+            addHandler(new PingCommand(this, Context.Sessions));
+            addHandler(new PrivateMessageCommand(Context.Channels, Context.ChannelUsers, Context.Messages));
             addHandler(new QuitCommand());
             addHandler(new StatsCommand());
             addHandler(new SummonCommand());
@@ -103,42 +107,50 @@ namespace SharpChat.Protocol.IRC {
         }
 
         private void Worker() {
-            lock(Sync)
-                while(IsRunning)
-                    try {
-                        if(Socket.Poll(1000000, SelectMode.SelectRead)) {
-                            IRCConnection conn = new IRCConnection(Socket.Accept());
+            while(IsRunning)
+                try {
+                    if(Socket.Poll(1000000, SelectMode.SelectRead)) {
+                        lock(Sync) {
+                            IRCConnection conn = new IRCConnection(this, Socket.Accept());
                             Connections.Add(conn.Socket, conn);
                         }
+                    }
 
-                        if(Connections.Count < 1) {
-                            Thread.Sleep(1000);
-                            continue;
-                        }
+                    bool anyConnections = false;
+                    lock(Sync)
+                        anyConnections = Connections.Any();
 
-                        List<Socket> sockets = new List<Socket>(Connections.Keys);
-                        Socket.Select(sockets, null, null, 5000000);
+                    if(!anyConnections) {
+                        Thread.Sleep(1000);
+                        continue;
+                    }
 
-                        foreach(Socket sock in sockets) {
-                            try {
-                                int read = sock.Receive(Buffer);
-                                string[] lines = Encoding.UTF8.GetString(Buffer, 0, read).Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    List<Socket> sockets;
+                    lock(Sync)
+                        sockets = new List<Socket>(Connections.Keys);
+                    Socket.Select(sockets, null, null, 5000000);
+
+                    foreach(Socket sock in sockets) {
+                        try {
+                            int read = sock.Receive(Buffer);
+                            string[] lines = Encoding.UTF8.GetString(Buffer, 0, read).Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                            lock(Sync)
                                 foreach(string line in lines)
                                     OnReceive(Connections[sock], line);
-                            } catch(SocketException ex) {
-                                Logger.Write($@"[IRC] Socket Error: {ex}");
-                            }
+                        } catch(SocketException ex) {
+                            Logger.Write($@"[IRC] Socket Error: {ex}");
                         }
-
-                        // check pings
-
-                        // this doesn't really work very well lolw
-                        IEnumerable<Socket> dead = Connections.Values.Where(c => !c.IsAvailable).Select(c => c.Socket).ToArray();
-                        foreach(Socket sock in dead)
-                            Connections.Remove(sock);
-                    } catch(Exception ex) {
-                        Logger.Write($@"[IRC] {ex}");
                     }
+
+                    // check pings
+
+                    // this doesn't really work very well lolw
+                    IEnumerable<Socket> dead = Connections.Values.Where(c => !c.IsAvailable).Select(c => c.Socket).ToArray();
+                    foreach(Socket sock in dead)
+                        Connections.Remove(sock);
+                } catch(Exception ex) {
+                    Logger.Write($@"[IRC] {ex}");
+                }
         }
 
         private void OnReceive(IRCConnection conn, string line) {
@@ -148,18 +160,16 @@ namespace SharpChat.Protocol.IRC {
 
             // do rate limiting
 
-            string prefix = null;
             string command = null;
             List<string> args = new List<string>();
 
             try {
                 int i = 0;
 
-                if(line[0] == PREFIX) {
+                // read prefix, if there is any.
+                // might be unnecessary, might only be server to server which will never happen
+                if(line[0] == PREFIX)
                     while(line[++i] != ' ');
-                    prefix = line[1..i];
-                } else
-                    prefix = @"meow";
 
                 int commandStart = i;
                 while((i < (line.Length - 1)) && line[++i] != ' ');
@@ -199,9 +209,35 @@ namespace SharpChat.Protocol.IRC {
                 Commands[command].HandleCommand(new ClientCommandContext(session, conn, args));
         }
 
+        // see comment in SockChatServer class
         public void HandleEvent(object sender, IEvent evt) {
             lock(Sync)
                 switch(evt) {
+                    case SessionPingEvent spe:
+                        IRCConnection spec = Connections.Values.FirstOrDefault(c => c.Session != null && spe.SessionId.Equals(c.Session.SessionId));
+                        if(spec == null)
+                            break;
+                        spec.LastPing = spe.DateTime;
+                        break;
+
+                    case MessageCreateEvent mce:
+                        Queue<ServerPrivateMessageCommand> msgs = new Queue<ServerPrivateMessageCommand>(ServerPrivateMessageCommand.Split(mce));
+
+                        Context.ChannelUsers.GetUsers(mce.Channel, users => {
+                            IEnumerable<IRCConnection> conns = Connections.Values.Where(c => users.Any(u => u.Equals(c.Session.User)));
+
+                            while(msgs.TryDequeue(out ServerPrivateMessageCommand spmc))
+                                foreach(IRCConnection conn in conns)
+                                    conn.SendCommand(spmc);
+                        });
+                        break;
+
+                    //case MessageUpdateEvent mue:
+                        //IMessage msg = Context.Messages.GetMessage(mue.MessageId);
+
+                        //break;
+
+
                     // these events need revising
                     case ChannelUserJoinEvent cuje:
                         UserJoinChannel(cuje.Channel, cuje.SessionId);
@@ -217,7 +253,7 @@ namespace SharpChat.Protocol.IRC {
             if(csjes == null || csjes.Connection is not IRCConnection csjec)
                 return;
             IChannel csjech = Context.Channels.GetChannel(channel);
-            csjec.SendCommand(new ServerJoinCommand(csjech));
+            csjec.SendCommand(new ServerJoinCommand(csjech, csjes.User));
             if(string.IsNullOrEmpty(csjech.Topic))
                 csjec.SendReply(new NoTopicReply(csjech));
             else

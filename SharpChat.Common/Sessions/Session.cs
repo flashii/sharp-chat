@@ -32,6 +32,7 @@ namespace SharpChat.Sessions {
                   connection?.RemoteAddress
             ) {
             Connection = connection;
+            Connection.Session = this; // there needs to be a better way to do this
         }
 
         public Session(
@@ -77,8 +78,10 @@ namespace SharpChat.Sessions {
                         break;
                     case SessionResumeEvent sre:
                         IsConnected = true;
-                        if(sre.HasConnection)
+                        if(sre.HasConnection) {
                             Connection = sre.Connection;
+                            Connection.Session = this;
+                        }
                         RemoteAddress = sre.RemoteAddress;
                         ServerId = sre.ServerId;
                         LastPing = DateTimeOffset.Now; // yes?
@@ -94,12 +97,8 @@ namespace SharpChat.Sessions {
                         break;*/
                 }
 
-                if(Connection != null) {
+                if(Connection != null)
                     LastEvent = evt.EventId;
-                    // this forwarding should probably get replaced by an event handler within IServer implementations
-                    // would alleviate the need for the WithData shit i think
-                    Connection.HandleEvent(sender, evt);
-                }
             }
         }
     }

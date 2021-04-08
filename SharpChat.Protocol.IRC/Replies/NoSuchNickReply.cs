@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace SharpChat.Protocol.IRC.Replies {
-    public class NoSuchNickReply : ServerReply {
+    public class NoSuchNickReply : Reply {
         public const int CODE = 401;
 
         public override int ReplyCode => CODE;

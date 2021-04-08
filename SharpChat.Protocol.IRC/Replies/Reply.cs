@@ -1,5 +1,5 @@
 ﻿namespace SharpChat.Protocol.IRC.Replies {
-    public abstract class ServerReply : IServerReply {
+    public abstract class Reply : IReply {
         public abstract int ReplyCode { get; }
         private string Line { get; set; }
 

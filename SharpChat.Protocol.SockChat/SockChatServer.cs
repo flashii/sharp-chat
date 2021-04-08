@@ -1,4 +1,6 @@
-﻿using SharpChat.Events;
+﻿using SharpChat.Channels;
+using SharpChat.Events;
+using SharpChat.Messages;
 using SharpChat.Protocol.SockChat.Commands;
 using SharpChat.Protocol.SockChat.PacketHandlers;
 using SharpChat.Protocol.SockChat.Packets;
@@ -17,7 +19,7 @@ namespace SharpChat.Protocol.SockChat {
         private Context Context { get; }
         private FleckWebSocketServer Server { get; set; }
 
-        private List<SockChatConnection> Connections { get; } = new List<SockChatConnection>();
+        private HashSet<SockChatConnection> Connections { get; } = new HashSet<SockChatConnection>();
         private IReadOnlyDictionary<ClientPacketId, IPacketHandler> PacketHandlers { get; }
 
         private readonly object Sync = new object();
@@ -133,10 +135,128 @@ namespace SharpChat.Protocol.SockChat {
                 handler.HandlePacket(new PacketHandlerContext(args, sess, conn));
         }
 
+        // the implementation of Everything here needs to be revised
+        // probably needs to be something that can more directly associate connections with user( id)s and session( id)s
         public void HandleEvent(object sender, IEvent evt) {
             lock(Sync)
                 switch(evt) {
-                    //
+                    case SessionPingEvent spe:
+                        SockChatConnection spec = Connections.FirstOrDefault(c => c.Session != null && spe.SessionId.Equals(c.Session.SessionId));
+                        if(spec == null)
+                            break;
+                        spec.LastPing = spe.DateTime;
+                        spec.SendPacket(new PongPacket(spe));
+                        break;
+                    case SessionChannelSwitchEvent scwe:
+                        SockChatConnection scwec = Connections.FirstOrDefault(c => c.Session != null && scwe.SessionId.Equals(c.Session.SessionId));
+                        if(scwec == null)
+                            break;
+                        if(scwe.Channel != null)
+                            scwec.LastChannel = scwe.Channel;
+                        scwec.SendPacket(new ChannelSwitchPacket(scwec.LastChannel));
+                        break;
+                    case SessionDestroyEvent sde:
+                        SockChatConnection sdec = Connections.FirstOrDefault(c => c.Session != null && sde.SessionId.Equals(c.Session.SessionId));
+                        if(sdec == null)
+                            break;
+                        sdec.Close();
+                        break;
+
+                    case UserUpdateEvent uue:
+                        UserUpdatePacket uuep = new UserUpdatePacket(uue);
+                        Context.ChannelUsers.GetUsers(uue.User, users => {
+                            foreach(IUser user in users) {
+                                SockChatConnection uuec = Connections.FirstOrDefault(c => c.Session != null && user.Equals(c.Session.User));
+                                if(uuec == null)
+                                    break;
+                                uuec.SendPacket(uuep);
+                            }
+                        });
+                        break;
+                    case UserDisconnectEvent ude:
+                        UserDisconnectPacket udep = new UserDisconnectPacket(ude);
+                        Context.ChannelUsers.GetUsers(ude.User, users => {
+                            foreach(IUser user in users) {
+                                SockChatConnection udec = Connections.FirstOrDefault(c => c.Session != null && user.Equals(c.Session.User));
+                                if(udec == null)
+                                    break;
+                                udec.SendPacket(udep);
+                            }
+                        });
+                        break;
+
+                    case ChannelUserJoinEvent cje: // should send UserConnectPacket on first channel join
+                        ChannelJoinPacket cjep = new ChannelJoinPacket(cje);
+                        Context.ChannelUsers.GetUsers(cje.Channel, users => {
+                            foreach(IUser user in users) {
+                                SockChatConnection cjec = Connections.FirstOrDefault(c => c.Session != null && user.Equals(c.Session.User));
+                                if(cjec == null)
+                                    break;
+                                cjec.SendPacket(cjep);
+                            }
+                        });
+                        break;
+                    case ChannelUserLeaveEvent cle:
+                        ChannelLeavePacket clep = new ChannelLeavePacket(cle);
+                        Context.ChannelUsers.GetUsers(cle.Channel, users => {
+                            foreach(IUser user in users) {
+                                SockChatConnection clec = Connections.FirstOrDefault(c => c.Session != null && user.Equals(c.Session.User));
+                                if(clec == null)
+                                    break;
+                                clec.SendPacket(clep);
+                            }
+                        });
+                        break;
+
+                    case MessageCreateEvent mce:
+                        MessageCreatePacket mcep = new MessageCreatePacket(mce);
+                        Context.ChannelUsers.GetUsers(mce.Channel, users => {
+                            foreach(IUser user in users) {
+                                SockChatConnection mcec = Connections.FirstOrDefault(c => c.Session != null && user.Equals(c.Session.User));
+                                if(mcec == null)
+                                    break;
+                                mcec.SendPacket(mcep);
+                            }
+                        });
+                        break;
+                    case MessageDeleteEvent mde:
+                        MessageDeletePacket mdep = new MessageDeletePacket(mde);
+                        Context.ChannelUsers.GetUsers(mde.Channel, users => {
+                            foreach(IUser user in users) {
+                                SockChatConnection mdec = Connections.FirstOrDefault(c => c.Session != null && user.Equals(c.Session.User));
+                                if(mdec == null)
+                                    break;
+                                mdec.SendPacket(mdep);
+                            }
+                        });
+                        break;
+                    case MessageUpdateEvent mue:
+                        IMessage muem = Context.Messages.GetMessage(mue.MessageId);
+                        if(muem == null)
+                            break;
+
+                        MessageDeletePacket muepd = new MessageDeletePacket(mue);
+                        MessageCreatePacket muecd = new MessageCreatePacket(new MessageCreateEvent(muem));
+
+                        Context.ChannelUsers.GetUsers(mue.Channel, users => {
+                            foreach(IUser user in users) {
+                                SockChatConnection muec = Connections.FirstOrDefault(c => c.Session != null && user.Equals(c.Session.User));
+                                if(muec == null)
+                                    break;
+                                muec.SendPacket(muepd);
+                                muec.SendPacket(muecd);
+                            }
+                        });
+                        break;
+
+                    case BroadcastMessageEvent bme:
+                        BroadcastMessagePacket bmep = new BroadcastMessagePacket(bme);
+                        foreach(SockChatConnection bmec in Connections) {
+                            if(bmec.Session == null)
+                                continue;
+                            bmec.SendPacket(bmep);
+                        }
+                        break;
                 }
         }
 
