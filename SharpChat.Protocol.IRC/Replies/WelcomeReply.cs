@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using SharpChat.Protocol.IRC.Users;
+using SharpChat.Users;
+using System;
 
 namespace SharpChat.Protocol.IRC.Replies {
     public class WelcomeReply : Reply {
@@ -10,9 +8,17 @@ namespace SharpChat.Protocol.IRC.Replies {
 
         public override int ReplyCode => CODE;
 
+        private IRCServer Server { get; }
+        private IUser User { get; }
+
+        public WelcomeReply(IRCServer server, IUser user) {
+            Server = server ?? throw new ArgumentNullException(nameof(server));
+            User = user ?? throw new ArgumentNullException(nameof(user));
+        }
+
         protected override string BuildLine() {
             // todo: allow customisation
-            return @":Welcome to SharpChat's IRC endpoint flash!flash@irc.railgun.sh";
+            return $@":Welcome to {Server.NetworkName} IRC {User.GetIRCMask(Server)}";
         }
     }
 }

@@ -15,7 +15,7 @@ namespace SharpChat.Protocol.IRC.ServerCommands {
         }
 
         protected override string BuildLine() {
-            return $@"{IRCServer.PREFIX}{Server.Name} {Argument}";
+            return $@"{IRCServer.PREFIX}{Server.ServerHost} {Argument}";
         }
     }
 }

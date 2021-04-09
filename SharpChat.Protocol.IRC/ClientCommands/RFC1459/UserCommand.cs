@@ -16,11 +16,15 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
 
         public string CommandName => NAME;
 
+        private IRCServer Server { get; }
+        private Context Context { get; }
         private UserManager Users { get; }
         private SessionManager Sessions { get; }
         private IDataProvider DataProvider { get; }
 
-        public UserCommand(UserManager users, SessionManager sessions, IDataProvider dataProvider) {
+        public UserCommand(IRCServer server, Context context, UserManager users, SessionManager sessions, IDataProvider dataProvider) {
+            Server = server ?? throw new ArgumentNullException(nameof(server));
+            Context = context ?? throw new ArgumentNullException(nameof(context));
             Users = users ?? throw new ArgumentNullException(nameof(users));
             Sessions = sessions ?? throw new ArgumentNullException(nameof(sessions));
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
@@ -56,8 +60,6 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
                     ctx.Connection.Password = null;
                     ctx.Connection.HasAuthenticated = true;
 
-                    Logger.Debug(@"here 1");
-
                     DataProvider.BanClient.CheckBan(res.UserId, ctx.Connection.RemoteAddress, ban => {
                         if(ban.IsPermanent || ban.Expires > DateTimeOffset.Now) {
                             // should probably include the time
@@ -67,10 +69,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
                             return;
                         }
 
-                        Logger.Debug(@"here 2");
-
                         IUser user = Users.Connect(res);
-                        Logger.Debug(@"here 3");
 
                         // Enforce a maximum amount of connections per user
                         if(Sessions.GetAvailableSessionCount(user) < 1) {
@@ -80,15 +79,13 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
                             return;
                         }
 
-                        Logger.Debug(@"here 4");
                         ISession sess = Sessions.Create(ctx.Connection, user);
-                        Logger.Debug(@"here 5");
 
-                        ctx.Connection.SendReply(new WelcomeReply());
-                        ctx.Connection.SendReply(new YourHostReply());
-                        ctx.Connection.SendReply(new CreatedReply());
-                        ctx.Connection.SendReply(new MyInfoReply());
-                        ctx.Connection.SendReply(new ISupportReply());
+                        ctx.Connection.SendReply(new WelcomeReply(Server, user));
+                        ctx.Connection.SendReply(new YourHostReply(Server));
+                        ctx.Connection.SendReply(new CreatedReply(Context));
+                        ctx.Connection.SendReply(new MyInfoReply(Server));
+                        ctx.Connection.SendReply(new ISupportReply(Server));
 
                         if(File.Exists(WELCOME)) {
                             ctx.Connection.SendReply(new MotdStartReply());

@@ -51,7 +51,7 @@ namespace SharpChat.Protocol.IRC {
                     sb.Append(sender.UserName);
                     sb.Append('@');
                 }
-                sb.Append(Server.Name);
+                sb.Append(Server.ServerHost);
                 sb.Append(' ');
 
                 // Command
@@ -72,7 +72,7 @@ namespace SharpChat.Protocol.IRC {
 
                 // Server
                 sb.Append(IRCServer.PREFIX);
-                sb.Append(Server.Name);
+                sb.Append(Server.ServerHost);
                 sb.Append(' ');
 
                 // Reply code

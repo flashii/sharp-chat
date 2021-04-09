@@ -35,7 +35,7 @@ namespace SharpChat.Protocol.IRC.Users {
         }
 
         public static string GetIRCMask(this IUser user, IRCServer server) {
-            return $@"{user.GetIRCMask()}@{server.Name}";
+            return $@"{user.GetIRCMask()}@{server.ServerHost}";
         }
     }
 }

@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SharpChat.Protocol.IRC.Replies {
     public class MyInfoReply : Reply {
@@ -10,9 +6,14 @@ namespace SharpChat.Protocol.IRC.Replies {
 
         public override int ReplyCode => CODE;
 
+        private IRCServer Server { get; }
+
+        public MyInfoReply(IRCServer server) {
+            Server = server ?? throw new ArgumentNullException(nameof(server));
+        }
+
         protected override string BuildLine() {
-            // todo: not static
-            return @":irc.railgun.sh SharpChat/2021xxxx Oiorw hovITbceiklmnpst";
+            return $@":{Server.ServerHost} {SharpInfo.ProgramName} ABCOaiowxz PTahklmnoqstvz";
         }
     }
 }

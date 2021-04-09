@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SharpChat.Protocol.IRC.Replies {
     public class CreatedReply : Reply {
@@ -10,9 +6,14 @@ namespace SharpChat.Protocol.IRC.Replies {
 
         public override int ReplyCode => CODE;
 
+        private Context Context { get; }
+
+        public CreatedReply(Context ctx) {
+            Context = ctx ?? throw new ArgumentNullException(nameof(ctx));
+        }
+
         protected override string BuildLine() {
-            // todo: not static
-            return @":This server was created 2000 years ago";
+            return $@":This server was created {Context.Created:r}";
         }
     }
 }

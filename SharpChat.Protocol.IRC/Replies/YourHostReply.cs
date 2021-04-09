@@ -1,12 +1,19 @@
-﻿namespace SharpChat.Protocol.IRC.Replies {
+﻿using System;
+
+namespace SharpChat.Protocol.IRC.Replies {
     public class YourHostReply : Reply {
         public const int CODE = 2;
 
         public override int ReplyCode => CODE;
 
+        private IRCServer Server { get; }
+
+        public YourHostReply(IRCServer server) {
+            Server = server ?? throw new ArgumentNullException(nameof(server));
+        }
+
         protected override string BuildLine() {
-            // todo: don't be static
-            return @":Your host is irc.railgun.sh, running version SharpChat/2021xxxx";
+            return $@":Your host is {Server.ServerHost}, running version {SharpInfo.ProgramName}";
         }
     }
 }

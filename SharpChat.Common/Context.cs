@@ -34,11 +34,14 @@ namespace SharpChat {
 
         private List<IEventHandler> EventHandlers { get; } = new List<IEventHandler>();
 
+        public DateTimeOffset Created { get; }
+
         public Context(IConfig config, IDatabaseBackend databaseBackend, IDataProvider dataProvider) {
             if(config == null)
                 throw new ArgumentNullException(nameof(config));
 
             ServerId = RNG.NextString(ID_LENGTH); // maybe read this from the cfg instead
+            Created = DateTimeOffset.Now; // read this from config definitely
 
             DatabaseWrapper db = new DatabaseWrapper(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
             IMessageStorage msgStore = db.IsNullBackend

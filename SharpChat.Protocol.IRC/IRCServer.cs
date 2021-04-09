@@ -35,7 +35,8 @@ namespace SharpChat.Protocol.IRC {
 
         private readonly object Sync = new object();
 
-        public string Name => @"irc.railgun.sh"; // read this from CFG
+        public string ServerHost => @"irc.railgun.sh"; // read this from CFG
+        public string NetworkName => @"Railgun"; // this also
 
         public IRCServer(Context ctx) {
             Context = ctx ?? throw new ArgumentNullException(nameof(ctx));
@@ -71,7 +72,7 @@ namespace SharpChat.Protocol.IRC {
             addHandler(new SummonCommand());
             addHandler(new TimeCommand());
             addHandler(new TopicCommand());
-            addHandler(new UserCommand(Context.Users, Context.Sessions, Context.DataProvider));
+            addHandler(new UserCommand(this, Context, Context.Users, Context.Sessions, Context.DataProvider));
             addHandler(new UserHostCommand());
             addHandler(new VersionCommand());
             addHandler(new WAllOpsCommand());

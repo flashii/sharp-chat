@@ -5,4 +5,20 @@
     <RootNamespace>SharpChat</RootNamespace>
   </PropertyGroup>
 
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+      <!-- Write name of latest Git tag name to version.txt if non-debug build -->
+      <Exec Condition="'$(Configuration)'!='DEBUG'" Command="git describe --abbrev=0 --tags --always &gt; version.txt" />
+      
+      <!-- Write hash of latest commit to version.txt if debug build -->
+      <Exec Condition="'$(Configuration)'=='DEBUG'" Command="git log --pretty=&quot;%25%25H&quot; -n1 HEAD &gt; version.txt" />
+  </Target>
+
+  <ItemGroup>
+    <None Remove="version.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="version.txt" />
+  </ItemGroup>
+
 </Project>
