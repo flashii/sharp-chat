@@ -22,16 +22,22 @@ namespace SharpChat.Protocol.SockChat.Commands {
             if(!setOthersNick && !ctx.User.Can(UserPermissions.SetOwnNickname))
                 throw new CommandNotAllowedException(NAME);
 
-            IUser targetUser = null;
-            int offset = 1;
-
             if(setOthersNick && long.TryParse(ctx.Args.ElementAtOrDefault(1), out long targetUserId) && targetUserId > 0) {
-                targetUser = Users.GetUser(targetUserId);
-                offset = 2;
-            }
+                Users.GetUser(targetUserId, user => DoCommand(ctx, 2, user));
+            } else
+                DoCommand(ctx);
 
-            if(targetUser == null)
-                targetUser = ctx.User;
+            //string previousName = targetUser == ctx.User ? (targetUser.NickName ?? targetUser.UserName) : null;
+            //Users.Update(targetUser, nickName: nickStr);
+            
+            // both of these need to go in ChannelUsers
+            //ctx.Channel.SendPacket(new UserNickChangePacket(Sender, previousName, targetUser.GetDisplayName()));
+            //ctx.Channel.SendPacket(new UserUpdatePacket(targetUser));
+            return true;
+        }
+
+        private void DoCommand(CommandContext ctx, int offset = 1, IUser targetUser = null) {
+            targetUser ??= ctx.User;
 
             if(ctx.Args.Count() < offset)
                 throw new CommandFormatException();
@@ -51,16 +57,14 @@ namespace SharpChat.Protocol.SockChat.Commands {
             else if(string.IsNullOrEmpty(nickStr))
                 nickStr = null;
 
-            if(nickStr != null && Users.GetUser(nickStr) != null)
-                throw new NickNameInUseCommandException(nickStr);
-
-            //string previousName = targetUser == ctx.User ? (targetUser.NickName ?? targetUser.UserName) : null;
-            Users.Update(targetUser, nickName: nickStr);
-            
-            // both of these need to go in ChannelUsers
-            //ctx.Channel.SendPacket(new UserNickChangePacket(Sender, previousName, targetUser.GetDisplayName()));
-            //ctx.Channel.SendPacket(new UserUpdatePacket(targetUser));
-            return true;
+            if(nickStr != null)
+                Users.GetUser(nickStr, user => {
+                    if(user != null)
+                        throw new NickNameInUseCommandException(nickStr);
+                    Users.Update(targetUser, nickName: nickStr);
+                });
+            else
+                Users.Update(targetUser, nickName: string.Empty);
         }
     }
 }

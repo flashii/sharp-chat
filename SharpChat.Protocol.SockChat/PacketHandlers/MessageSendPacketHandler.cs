@@ -48,47 +48,55 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
             if(string.IsNullOrWhiteSpace(text))
                 return;
 
-            IChannel channel;
             string channelName = ctx.Args.ElementAtOrDefault(3)?.ToLowerInvariant();
             if(string.IsNullOrWhiteSpace(channelName))
-                channel = Channels.DefaultChannel;
+                ChannelContinue(ctx, Channels.DefaultChannel, text); // this should grab from the user, not the context wtf
             else
-                channel = Channels.GetChannel(channelName);
+                Channels.GetChannel(channelName, channel => ChannelContinue(ctx, channel, text)); // this also doesn't check if we're actually in the channel
+        }
 
+        private void ChannelContinue(PacketHandlerContext ctx, IChannel channel, string text) {
             if(channel == null
-                || !ChannelUsers.HasUser(channel, ctx.User)
+            //  || !ChannelUsers.HasUser(channel, ctx.User) look below
             //  || (ctx.User.IsSilenced && !ctx.User.Can(UserPermissions.SilenceUser)) TODO: readd silencing
-            ) return;
+            )
+                return;
 
-            if(ctx.User.Status != UserStatus.Online) {
-                Users.Update(ctx.User, status: UserStatus.Online);
-                // ChannelUsers?
-                //channel.SendPacket(new UserUpdatePacket(ctx.User));
-            }
+            // this should probably check session rather than user
+            ChannelUsers.HasUser(channel, ctx.User, hasUser => {
+                if(hasUser)
+                    return;
 
-            // there's a very miniscule chance that this will return a different value on second read
-            int maxLength = Messages.TextMaxLength;
-            if(text.Length > maxLength)
-                text = text.Substring(0, maxLength);
-
-            text = text.Trim();
-
-#if DEBUG
-            Logger.Write($@"<{ctx.Session.SessionId} {ctx.User.UserName}> {text}");
-#endif
-
-            bool handled = false;
-
-            if(text[0] == '/')
-                try {
-                    handled = HandleCommand(text, ctx.User, channel, ctx.Session, ctx.Connection);
-                } catch(CommandException ex) {
-                    ctx.Connection.SendPacket(ex.ToPacket(Bot));
-                    handled = true;
+                if(ctx.User.Status != UserStatus.Online) {
+                    Users.Update(ctx.User, status: UserStatus.Online);
+                    // ChannelUsers?
+                    //channel.SendPacket(new UserUpdatePacket(ctx.User));
                 }
 
-            if(!handled)
-                Messages.Create(ctx.User, channel, text);
+                // there's a very miniscule chance that this will return a different value on second read
+                int maxLength = Messages.TextMaxLength;
+                if(text.Length > maxLength)
+                    text = text.Substring(0, maxLength);
+
+                text = text.Trim();
+
+#if DEBUG
+                Logger.Write($@"<{ctx.Session.SessionId} {ctx.User.UserName}> {text}");
+#endif
+
+                bool handled = false;
+
+                if(text[0] == '/')
+                    try {
+                        handled = HandleCommand(text, ctx.User, channel, ctx.Session, ctx.Connection);
+                    } catch(CommandException ex) {
+                        ctx.Connection.SendPacket(ex.ToPacket(Bot));
+                        handled = true;
+                    }
+
+                if(!handled)
+                    Messages.Create(ctx.User, channel, text);
+            });
         }
 
         public bool HandleCommand(string message, IUser user, IChannel channel, ISession session, SockChatConnection connection) {

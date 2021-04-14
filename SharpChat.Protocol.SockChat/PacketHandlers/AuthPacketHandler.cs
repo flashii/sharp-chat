@@ -69,49 +69,53 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
                             return;
                         }
 
-                        IUser user = Users.Connect(res);
+                        Users.Connect(res, user => {
+                            Sessions.HasAvailableSessions(user, available => {
+                                if(!available) {
+                                    ctx.Connection.SendPacket(new AuthFailPacket(AuthFailReason.MaxSessions));
+                                    ctx.Connection.Close();
+                                    return;
+                                }
 
-                        // Enforce a maximum amount of connections per user
-                        if(Sessions.GetAvailableSessionCount(user) < 1) {
-                            ctx.Connection.SendPacket(new AuthFailPacket(AuthFailReason.MaxSessions));
-                            ctx.Connection.Close();
-                            return;
-                        }
+                                Sessions.Create(ctx.Connection, user, session => {
+                                    ctx.Connection.SendPacket(new WelcomeMessagePacket(Sender, $@"Welcome to Flashii Chat, {user.UserName}!"));
 
-                        ISession sess = Sessions.Create(ctx.Connection, user);
+                                    // TODO: this needs generalisation
+                                    if(File.Exists(WELCOME)) {
+                                        IEnumerable<string> lines = File.ReadAllLines(WELCOME).Where(x => !string.IsNullOrWhiteSpace(x));
+                                        string line = lines.ElementAtOrDefault(RNG.Next(lines.Count()));
 
-                        ctx.Connection.SendPacket(new WelcomeMessagePacket(Sender, $@"Welcome to Flashii Chat, {user.UserName}!"));
+                                        if(!string.IsNullOrWhiteSpace(line))
+                                            ctx.Connection.SendPacket(new WelcomeMessagePacket(Sender, line));
+                                    }
 
-                        // TODO: this needs generalisation
-                        if(File.Exists(WELCOME)) {
-                            IEnumerable<string> lines = File.ReadAllLines(WELCOME).Where(x => !string.IsNullOrWhiteSpace(x));
-                            string line = lines.ElementAtOrDefault(RNG.Next(lines.Count()));
+                                    IChannel chan = Channels.DefaultChannel;
 
-                            if(!string.IsNullOrWhiteSpace(line))
-                                ctx.Connection.SendPacket(new WelcomeMessagePacket(Sender, line));
-                        }
+                                    ChannelUsers.HasUser(chan, user, hasUser => {
+                                        bool shouldJoin = !hasUser;
 
-                        IChannel chan = Channels.DefaultChannel;
-                        bool shouldJoin = !ChannelUsers.HasUser(chan, user);
+                                        if(shouldJoin) {
+                                            // ChannelUsers?
+                                            //chan.SendPacket(new UserConnectPacket(DateTimeOffset.Now, user));
+                                            //ctx.Chat.DispatchEvent(this, new UserConnectEvent(chan, user));
+                                        }
 
-                        if(shouldJoin) {
-                            // ChannelUsers?
-                            //chan.SendPacket(new UserConnectPacket(DateTimeOffset.Now, user));
-                            //ctx.Chat.DispatchEvent(this, new UserConnectEvent(chan, user));
-                        }
+                                        ctx.Connection.SendPacket(new AuthSuccessPacket(user, chan, session, Messages.TextMaxLength));
+                                        ChannelUsers.GetUsers(chan, u => ctx.Connection.SendPacket(new ContextUsersPacket(u.Except(new[] { user }).OrderByDescending(u => u.Rank))));
 
-                        ctx.Connection.SendPacket(new AuthSuccessPacket(user, chan, sess, Messages.TextMaxLength));
-                        ChannelUsers.GetUsers(chan, u => ctx.Connection.SendPacket(new ContextUsersPacket(u.Except(new[] { user }).OrderByDescending(u => u.Rank))));
+                                        Messages.GetMessages(chan, m => {
+                                            foreach(IMessage msg in m)
+                                                ctx.Connection.SendPacket(new ContextMessagePacket(msg));
+                                        });
 
-                        Messages.GetMessages(chan, m => {
-                            foreach(IMessage msg in m)
-                                ctx.Connection.SendPacket(new ContextMessagePacket(msg));
+                                        Channels.GetChannels(user.Rank, c => ctx.Connection.SendPacket(new ContextChannelsPacket(c)));
+
+                                        if(shouldJoin)
+                                            ChannelUsers.JoinChannel(chan, session);
+                                    });
+                                });
+                            });
                         });
-
-                        Channels.GetChannels(user.Rank, c => ctx.Connection.SendPacket(new ContextChannelsPacket(c)));
-
-                        if(shouldJoin)
-                            ChannelUsers.JoinChannel(chan, sess);
                     }, exceptionHandler);
                 },
                 exceptionHandler

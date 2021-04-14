@@ -4,6 +4,7 @@ using SharpChat.Sessions;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SharpChat.Channels {
     public class ChannelUserRelations : IEventHandler {
@@ -12,7 +13,6 @@ namespace SharpChat.Channels {
         private UserManager Users { get; }
         private SessionManager Sessions { get; }
         private MessageManager Messages { get; }
-        private readonly object Sync = new object();
 
         public ChannelUserRelations(
             IEventDispatcher dispatcher,
@@ -28,50 +28,97 @@ namespace SharpChat.Channels {
             Messages = messages ?? throw new ArgumentNullException(nameof(messages));
         }
 
-        public bool HasUser(IChannel channel, IUser user) {
+        public void HasUser(IChannel channel, IUser user, Action<bool> callback) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
 
-            if(Channels.GetChannel(channel) is not Channel c)
-                return false;
+            Channels.GetChannel(channel, c => {
+                if(c is not Channel channel) {
+                    callback(false);
+                    return;
+                }
 
-            return c.HasUser(user);
+                callback(channel.HasUser(user));
+            });
         }
 
-        public bool HasSession(IChannel channel, ISession session) {
+        public void HasSession(IChannel channel, ISession session, Action<bool> callback) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));
             if(session == null)
                 throw new ArgumentNullException(nameof(session));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
 
-            if(Channels.GetChannel(channel) is not Channel c)
-                return false;
+            Channels.GetChannel(channel, c => {
+                if(c is not Channel channel) {
+                    callback(false);
+                    return;
+                }
 
-            return c.HasSession(session);
+                callback(channel.HasSession(session));
+            });
         }
 
-        public int CountUsers(IChannel channel) {
+        public void CountUsers(IChannel channel, Action<int> callback) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
 
-            if(Channels.GetChannel(channel) is not Channel c)
-                return 0;
+            Channels.GetChannel(channel, c => {
+                if(c is not Channel channel) {
+                    callback(-1);
+                    return;
+                }
 
-            return c.CountUsers();
+                callback(channel.CountUsers());
+            });
         }
 
-        public int CountUserSessions(IChannel channel, IUser user) {
+        public void CountUserSessions(IChannel channel, IUser user, Action<int> callback) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
 
-            if(Channels.GetChannel(channel) is not Channel c)
-                return 0;
+            Channels.GetChannel(channel, c => {
+                if(c is not Channel channel) {
+                    callback(-1);
+                    return;
+                }
 
-            return c.CountUserSessions(user);
+                callback(channel.CountUserSessions(user));
+            });
+        }
+
+        public void CheckOverCapacity(IChannel channel, IUser user, Action<bool> callback) {
+            if(channel == null)
+                throw new ArgumentNullException(nameof(channel));
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            Channels.GetChannel(channel, channel => {
+                if(channel == null) {
+                    callback(true);
+                    return;
+                }
+
+                if(!channel.HasMaxCapacity() || user.Equals(channel.Owner)) {
+                    callback(false);
+                    return;
+                }
+
+                CountUsers(channel, userCount => callback(channel == null || userCount >= channel.MaxCapacity));
+            });
         }
 
         public void GetUsers(IChannel channel, Action<IEnumerable<IUser>> callback) {
@@ -80,8 +127,14 @@ namespace SharpChat.Channels {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
-            if(Channels.GetChannel(channel) is Channel c)
-                c.GetUserIds(ids => Users.GetUsers(ids, callback));
+            Channels.GetChannel(channel, c => {
+                if(c is not Channel channel) {
+                    callback(Enumerable.Empty<IUser>());
+                    return;
+                }
+
+                channel.GetUserIds(ids => Users.GetUsers(ids, callback));
+            });
         }
 
         public void GetUsers(IEnumerable<IChannel> channels, Action<IEnumerable<IUser>> callback) {
@@ -90,38 +143,56 @@ namespace SharpChat.Channels {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
-            HashSet<long> ids = new HashSet<long>();
+            // this is pretty disgusting
+            Channels.GetChannels(channels, channels => {
+                HashSet<long> ids = new HashSet<long>();
 
-            foreach(IChannel channel in channels)
-                if(Channels.GetChannel(channel) is Channel c)
-                    c.GetUserIds(u => {
+                foreach(IChannel c in channels) {
+                    if(c is not Channel channel)
+                        continue;
+
+                    channel.GetUserIds(u => {
                         foreach(long id in u)
                             ids.Add(id);
                     });
+                }
 
-            Users.GetUsers(ids, callback);
+                Users.GetUsers(ids, callback);
+            });
         }
 
+        // this makes me cry
         public void GetUsers(IUser user, Action<IEnumerable<IUser>> callback) {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
-            lock(Sync) {
-                HashSet<IUser> all = new HashSet<IUser>();
+            HashSet<IUser> all = new HashSet<IUser>();
 
-                Channels.GetChannels(channels => {
-                    foreach(IChannel channel in channels) {
-                        GetUsers(channel, users => {
-                            foreach(IUser user in users)
-                                all.Add(user);
-                        });
-                    }
-                });
+            Channels.GetChannels(channels => {
+                foreach(IChannel channel in channels) {
+                    GetUsers(channel, users => {
+                        foreach(IUser user in users)
+                            all.Add(user);
+                    });
+                }
+            });
 
-                callback(all);
-            }
+            callback(all);
+        }
+
+        public void GetSessions(Func<ISession, bool> predicate, Action<IEnumerable<ISession>> callback) {
+            if(predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            //callback(Sessions.GetSessions();
+        }
+
+        public void GetSessions(IChannel channel, Action<IEnumerable<ISession>> callback) {
+            //
         }
 
         public void GetChannels(IUser user, Action<IEnumerable<IChannel>> callback) {
@@ -130,8 +201,14 @@ namespace SharpChat.Channels {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
-            if(Users.GetUser(user) is User u)
-                u.GetChannels(cn => Channels.GetChannels(cn, callback));
+            Users.GetUser(user, u => {
+                if(u is not User user) {
+                    callback(Enumerable.Empty<IChannel>());
+                    return;
+                }
+
+                user.GetChannels(c => Channels.GetChannels(c, callback));
+            });
         }
 
         public void GetChannels(ISession session, Action<IEnumerable<IChannel>> callback) {
@@ -148,13 +225,20 @@ namespace SharpChat.Channels {
             if(session == null)
                 throw new ArgumentNullException(nameof(session));
 
-            if(!HasSession(channel, session))
-                Dispatcher.DispatchEvent(
-                    this,
-                    HasUser(channel, session.User)
-                        ? new ChannelSessionJoinEvent(channel, session)
-                        : new ChannelUserJoinEvent(channel, session)
-                );
+            HasSession(channel, session, hasSession => {
+                if(hasSession)
+                    return;
+
+                // SessionJoin and UserJoin should be combined
+                HasUser(channel, session.User, HasUser => {
+                    Dispatcher.DispatchEvent(
+                        this,
+                        HasUser
+                            ? new ChannelSessionJoinEvent(channel, session)
+                            : new ChannelUserJoinEvent(channel, session)
+                    );
+                });
+            });
         }
 
         public void LeaveChannel(IChannel channel, IUser user, UserDisconnectReason reason = UserDisconnectReason.Unknown) {
@@ -163,8 +247,10 @@ namespace SharpChat.Channels {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
 
-            if(HasUser(channel, user))
-                Dispatcher.DispatchEvent(this, new ChannelUserLeaveEvent(channel, user, reason));
+            HasUser(channel, user, hasUser => {
+                if(hasUser)
+                    Dispatcher.DispatchEvent(this, new ChannelUserLeaveEvent(channel, user, reason));
+            });
         }
 
         public void LeaveChannel(IChannel channel, ISession session) {
@@ -173,69 +259,73 @@ namespace SharpChat.Channels {
             if(session == null)
                 throw new ArgumentNullException(nameof(session));
 
-            if(HasSession(channel, session))
-                Dispatcher.DispatchEvent(
-                    this,
-                    CountUserSessions(channel, session.User) <= 1
-                        ? new ChannelUserLeaveEvent(channel, session.User, UserDisconnectReason.Leave)
-                        : new ChannelSessionLeaveEvent(channel, session)
-                );
+            HasSession(channel, session, hasSession => {
+                // UserLeave and SessionLeave should be combined
+                CountUserSessions(channel, session.User, sessionCount => {
+                    Dispatcher.DispatchEvent(
+                        this,
+                        sessionCount <= 1
+                            ? new ChannelUserLeaveEvent(channel, session.User, UserDisconnectReason.Leave)
+                            : new ChannelSessionLeaveEvent(channel, session)
+                    );
+                });
+            });
         }
 
         public void LeaveChannels(ISession session) {
             if(session == null)
                 throw new ArgumentNullException(nameof(session));
 
-            lock(Sync)
-                Channels.GetChannels(channels => {
-                    foreach(IChannel channel in channels)
-                        if(HasSession(channel, session))
-                            LeaveChannel(channel, session);
-                });
+            Channels.GetChannels(channels => {
+                foreach(IChannel channel in channels)
+                    LeaveChannel(channel, session);
+            });
         }
 
         public void HandleEvent(object sender, IEvent evt) {
-            lock(Sync) {
-                IEnumerable<IUser> targets = null;
+            IEnumerable<IUser> targets = null;
 
-                switch(evt) {
-                    case UserUpdateEvent uue: // fetch up to date user info
-                        GetChannels(evt.User, channels => GetUsers(channels, users => targets = users));
+            switch(evt) {
+                case UserUpdateEvent uue: // fetch up to date user info
+                    // THIS IS VERY ILLEGAL
+                    GetChannels(evt.User, channels => GetUsers(channels, users => targets = users));
+                    Users.GetUser(uue.User, user => {
+                        if(user != null)
+                            evt = new UserUpdateEvent(user, uue);
+                    });
+                    break;
 
-                        IUser uueUser = Users.GetUser(uue.User);
-                        if(uueUser != null)
-                            evt = new UserUpdateEvent(uueUser, uue);
-                        break;
+                case ChannelUserJoinEvent cje:
+                    // THIS DOES NOT DO WHAT YOU WANT IT TO DO
+                    // I THINK
+                    // it really doesn't, figure out how to leave channels when MCHAN isn't active for the session
+                    //if((Sessions.GetCapabilities(cje.User) & ClientCapability.MCHAN) == 0)
+                    //    LeaveChannel(cje.Channel, cje.User, UserDisconnectReason.Leave);
+                    break;
 
-                    case ChannelUserJoinEvent cje:
-                        // THIS DOES NOT DO WHAT YOU WANT IT TO DO
-                        // I THINK
-                        // it really doesn't, figure out how to leave channels when MCHAN isn't active for the session
-                        //if((Sessions.GetCapabilities(cje.User) & ClientCapability.MCHAN) == 0)
-                        //    LeaveChannel(cje.Channel, cje.User, UserDisconnectReason.Leave);
-                        break;
-
-                    case ChannelUserLeaveEvent cle: // Should ownership just be passed on to another user instead of Destruction?
-                        IChannel channel = Channels.GetChannel(evt.Channel);
+                case ChannelUserLeaveEvent cle: // Should ownership just be passed on to another user instead of Destruction?
+                    Channels.GetChannel(evt.Channel, channel => {
                         if(channel.IsTemporary && evt.User.Equals(channel.Owner))
                             Channels.Remove(channel);
-                        break;
-
-                    case SessionDestroyEvent sde:
-                        if(Sessions.GetSessionCount(sde.User) < 1)
-                            Users.Disconnect(sde.User, UserDisconnectReason.TimeOut);
-                        break;
-                }
-
-                if(targets == null && evt.Channel != null)
-                    GetUsers(evt.Channel, users => targets = users);
-
-                if(targets != null)
-                    Sessions.GetSessions(targets, sessions => {
-                        foreach(ISession session in sessions)
-                            session.HandleEvent(sender, evt);
                     });
+                    break;
+
+                case SessionDestroyEvent sde:
+                    if(Sessions.GetSessionCount(sde.User) < 1)
+                        Users.Disconnect(sde.User, UserDisconnectReason.TimeOut);
+                    break;
             }
+
+            // Any forwarding that happens here should probably Go
+
+            if(targets == null && evt.Channel != null)
+                GetUsers(evt.Channel, users => targets = users);
+
+            if(targets != null)
+                Sessions.GetSessions(targets, sessions => {
+                    foreach(ISession session in sessions)
+                        session.HandleEvent(sender, evt);
+                });
         }
     }
 }

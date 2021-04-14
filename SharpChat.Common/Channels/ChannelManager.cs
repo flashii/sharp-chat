@@ -83,20 +83,6 @@ namespace SharpChat.Channels {
             }
         }
 
-        public bool Exists(string name) {
-            if(name == null)
-                throw new ArgumentNullException(nameof(name));
-            lock(Sync)
-                return Channels.Any(c => c.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
-        }
-
-        public bool Exists(IChannel channel) {
-            if(channel == null)
-                throw new ArgumentNullException(nameof(channel));
-            lock(Sync)
-                return Channels.Any(c => c.Equals(channel));
-        }
-
         public void Remove(IChannel channel, IUser user = null) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));
@@ -132,13 +118,11 @@ namespace SharpChat.Channels {
             }
         }
 
-        public bool Contains(IChannel chan) {
-            if(chan == null)
-                return false;
-
+        private bool Exists(string name) {
+            if(name == null)
+                throw new ArgumentNullException(nameof(name));
             lock(Sync)
-                return Channels.Contains(chan)
-                    || Channels.Any(c => c.Name.ToLowerInvariant() == chan.Name.ToLowerInvariant());
+                return Channels.Any(c => c.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
         }
 
         private void ValidateName(string name) {
@@ -234,20 +218,7 @@ namespace SharpChat.Channels {
             }
         }
 
-        public IChannel GetChannel(Func<IChannel, bool> predicate) {
-            if(predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
-            lock(Sync)
-                return Channels.FirstOrDefault(predicate);
-        }
-
-        public IChannel GetChannel(string name) {
-            if(string.IsNullOrWhiteSpace(name))
-                return null;
-            lock(Sync)
-                return Channels.FirstOrDefault(c => c.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
-        }
-
+        [Obsolete(@"Use void GetChannel(IChannel channel, Action<IChannel> callback)")]
         public IChannel GetChannel(IChannel channel) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));
@@ -258,11 +229,52 @@ namespace SharpChat.Channels {
             }
         }
 
+        public void GetChannel(Func<IChannel, bool> predicate, Action<IChannel> callback) {
+            if(predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            lock(Sync)
+                callback(Channels.FirstOrDefault(predicate));
+        }
+
+        public void GetChannel(string name, Action<IChannel> callback) {
+            if(name == null)
+                throw new ArgumentNullException(nameof(name));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            GetChannel(c => c.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase), callback);
+        }
+
+        public void GetChannel(IChannel channel, Action<IChannel> callback) {
+            if(channel == null)
+                throw new ArgumentNullException(nameof(channel));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            lock(Sync) {
+                if(channel is Channel c && Channels.Contains(c)) {
+                    callback(c);
+                    return;
+                }
+
+                GetChannel(channel.Equals, callback);
+            }
+        }
+
         public void GetChannels(Action<IEnumerable<IChannel>> callback) {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
             lock(Sync)
-                callback.Invoke(Channels);
+                callback(Channels);
+        }
+
+        public void GetChannels(Func<IChannel, bool> predicate, Action<IEnumerable<IChannel>> callback) {
+            if(predicate == null)
+                throw new ArgumentNullException(nameof(predicate));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            lock(Sync)
+                callback(Channels.Where(predicate));
         }
 
         public void GetChannels(IEnumerable<string> names, Action<IEnumerable<IChannel>> callback) {
@@ -270,15 +282,21 @@ namespace SharpChat.Channels {
                 throw new ArgumentNullException(nameof(names));
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
-            lock(Sync)
-                callback.Invoke(Channels.Where(c => names.Contains(c.Name)));
+            GetChannels(c => names.Contains(c.Name), callback);
+        }
+
+        public void GetChannels(IEnumerable<IChannel> channels, Action<IEnumerable<IChannel>> callback) {
+            if(channels == null)
+                throw new ArgumentNullException(nameof(channels));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            GetChannels(c1 => channels.Any(c2 => c2.Equals(c1)), callback);
         }
 
         public void GetChannels(int minRank, Action<IEnumerable<IChannel>> callback) {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
-            lock(Sync)
-                callback.Invoke(Channels.Where(c => c.MinimumRank <= minRank));
+            GetChannels(c => c.MinimumRank <= minRank, callback);
         }
 
         public void GetChannels(IUser user, Action<IEnumerable<IChannel>> callback) {
@@ -286,23 +304,30 @@ namespace SharpChat.Channels {
                 throw new ArgumentNullException(nameof(user));
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
-
-            lock(Sync)
-                callback.Invoke(Channels.Where(c => c.HasUser(user)));
+            GetChannels(c => c is Channel channel && channel.HasUser(user), callback);
         }
 
-        public bool VerifyPassword(IChannel channel, string password) {
+        public void VerifyPassword(IChannel channel, string password, Action<bool> callback) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));
             if(password == null)
                 throw new ArgumentNullException(nameof(password));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
 
-            if(GetChannel(channel) is not Channel c)
-                return false;
-            if(!c.HasPassword)
-                return true;
+            GetChannel(channel, c => {
+                if(c is not Channel channel) {
+                    callback(false);
+                    return;
+                }
+                
+                if(!channel.HasPassword) {
+                    callback(true);
+                    return;
+                }
 
-            return c.VerifyPassword(password);
+                callback(channel.VerifyPassword(password));
+            });
         }
 
         private void OnCreate(object sender, ChannelCreateEvent cce) {
@@ -346,21 +371,20 @@ namespace SharpChat.Channels {
         }
 
         public void HandleEvent(object sender, IEvent evt) {
-            lock(Sync)
-                switch(evt) {
-                    case ChannelCreateEvent cce:
-                        OnCreate(sender, cce);
-                        break;
-                    case ChannelDeleteEvent cde:
-                        OnDelete(sender, cde);
-                        break;
+            switch(evt) {
+                case ChannelCreateEvent cce:
+                    OnCreate(sender, cce);
+                    break;
+                case ChannelDeleteEvent cde:
+                    OnDelete(sender, cde);
+                    break;
 
-                    case ChannelUpdateEvent _:
-                    case ChannelUserJoinEvent _:
-                    case ChannelUserLeaveEvent _:
-                        OnEvent(sender, evt);
-                        break;
-                }
+                case ChannelUpdateEvent _:
+                case ChannelUserJoinEvent _:
+                case ChannelUserLeaveEvent _:
+                    OnEvent(sender, evt);
+                    break;
+            }
         }
     }
 }

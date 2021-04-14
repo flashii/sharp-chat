@@ -22,31 +22,36 @@ namespace SharpChat.Protocol.SockChat.Commands {
                 throw new CommandNotAllowedException(commandName);
 
             string userName = ctx.Args.ElementAtOrDefault(1);
-            IUser user;
-            if(userName == null || (user = Users.GetUser(userName)) == null)
+            if(string.IsNullOrEmpty(userName))
                 throw new UserNotFoundCommandException(userName);
 
-            if(user == ctx.User || user.Rank >= ctx.User.Rank)
-                throw new KickNotAllowedCommandException(user.UserName);
+            Users.GetUser(userName, user => {
+                if(user == null)
+                    throw new UserNotFoundCommandException(userName);
 
-            bool isPermanent = isBan;
-            string durationArg = ctx.Args.ElementAtOrDefault(2);
-            TimeSpan duration = TimeSpan.Zero;
+                if(user == ctx.User || user.Rank >= ctx.User.Rank)
+                    throw new KickNotAllowedCommandException(user.UserName);
 
-            if(!string.IsNullOrEmpty(durationArg)) {
-                if(durationArg == @"-1") {
-                    isPermanent = true;
-                } else {
-                    if(!double.TryParse(durationArg, out double durationRaw))
-                        throw new CommandFormatException();
-                    isPermanent = false;
-                    duration = TimeSpan.FromSeconds(durationRaw);
+                bool isPermanent = isBan;
+                string durationArg = ctx.Args.ElementAtOrDefault(2);
+                TimeSpan duration = TimeSpan.Zero;
+
+                if(!string.IsNullOrEmpty(durationArg)) {
+                    if(durationArg == @"-1") {
+                        isPermanent = true;
+                    } else {
+                        if(!double.TryParse(durationArg, out double durationRaw))
+                            throw new CommandFormatException();
+                        isPermanent = false;
+                        duration = TimeSpan.FromSeconds(durationRaw);
+                    }
                 }
-            }
 
-            // TODO: allow supplying a textReason
+                // TODO: allow supplying a textReason
 
-            //ctx.Chat.BanUser(user, duration, isPermanent: isPermanent, modUser: ctx.User);
+                //ctx.Chat.BanUser(user, duration, isPermanent: isPermanent, modUser: ctx.User);
+            });
+
             return true;
         }
     }

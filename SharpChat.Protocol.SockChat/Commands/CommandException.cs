@@ -5,6 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+// NOT SURE why i thought this was a good idea
+// revert this back to just shooting packets
+
 namespace SharpChat.Protocol.SockChat.Commands {
     public class CommandException : Exception {
         private string ErrorCode { get; }

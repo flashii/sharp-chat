@@ -27,35 +27,45 @@ namespace SharpChat.Protocol.SockChat.Commands {
             if(string.IsNullOrWhiteSpace(channelName))
                 return false;
 
-            IChannel channel = Channels.GetChannel(channelName);
+            Channels.GetChannel(channelName, channel => {
+                // the original server sends ForceChannel before sending the error message, but this order probably makes more sense.
+                // NEW: REVERT THIS ^^^^ WHEN CONVERTING BACK TO NOT EXCEPTIONS
+                // EXCEPTIONS ARE HEAVY, DON'T USE THEM FOR USER ERRORS YOU IDIOT
 
-            // the original server sends ForceChannel before sending the error message, but this order probably makes more sense.
-
-            if(channel == null) {
-                Sessions.SwitchChannel(ctx.Session);
-                throw new ChannelNotFoundCommandException(channelName);
-            }
-
-            if(ChannelUsers.HasUser(channel, ctx.User)) {
-                Sessions.SwitchChannel(ctx.Session);
-                throw new AlreadyInChannelCommandException(channel);
-            }
-
-            string password = string.Join(' ', ctx.Args.Skip(2));
-
-            if(!ctx.User.Can(UserPermissions.JoinAnyChannel) && channel.Owner != ctx.User) {
-                if(channel.MinimumRank > ctx.User.Rank) {
+                if(channel == null) {
                     Sessions.SwitchChannel(ctx.Session);
-                    throw new ChannelRankCommandException(channel);
+                    throw new ChannelNotFoundCommandException(channelName);
                 }
 
-                if(!Channels.VerifyPassword(channel, password)) {
-                    Sessions.SwitchChannel(ctx.Session);
-                    throw new ChannelPasswordCommandException(channel);
-                }
-            }
+                ChannelUsers.HasUser(channel, ctx.User, hasUser => {
+                    if(hasUser) {
+                        Sessions.SwitchChannel(ctx.Session);
+                        throw new AlreadyInChannelCommandException(channel);
+                    }
 
-            ChannelUsers.JoinChannel(channel, ctx.Session);
+                    string password = string.Join(' ', ctx.Args.Skip(2));
+
+                    if(!ctx.User.Can(UserPermissions.JoinAnyChannel) && channel.Owner != ctx.User) {
+                        if(channel.MinimumRank > ctx.User.Rank) {
+                            Sessions.SwitchChannel(ctx.Session);
+                            throw new ChannelRankCommandException(channel);
+                        }
+
+                        // add capacity check
+
+                        Channels.VerifyPassword(channel, password, success => {
+                            if(!success) {
+                                Sessions.SwitchChannel(ctx.Session);
+                                throw new ChannelPasswordCommandException(channel);
+                            }
+
+                            ChannelUsers.JoinChannel(channel, ctx.Session);
+                        });
+                    } else
+                        ChannelUsers.JoinChannel(channel, ctx.Session);
+                });
+            });
+
             return true;
         }
     }

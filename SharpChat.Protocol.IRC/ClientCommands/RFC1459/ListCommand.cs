@@ -21,10 +21,10 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
 
             Channels.GetChannels(channels => { // probably needs to check if a user actually has access
                 foreach(IChannel channel in channels)
-                    ctx.Connection.SendReply(new ListItemReply(channel, ChannelUsers.CountUsers(channel)));
-            });
+                    ChannelUsers.CountUsers(channel, userCount => ctx.Connection.SendReply(new ListItemReply(channel, userCount)));
 
-            ctx.Connection.SendReply(new ListEndReply());
+                ctx.Connection.SendReply(new ListEndReply());
+            });
         }
     }
 }

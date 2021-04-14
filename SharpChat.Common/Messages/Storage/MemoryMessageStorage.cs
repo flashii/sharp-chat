@@ -10,9 +10,11 @@ namespace SharpChat.Messages.Storage {
         private List<MemoryMessageChannel> Channels { get; } = new List<MemoryMessageChannel>();
         private readonly object Sync = new object();
 
-        public IMessage GetMessage(long messageId) {
+        public void GetMessage(long messageId, Action<IMessage> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
             lock(Sync)
-                return Messages.FirstOrDefault(m => m.MessageId == messageId);
+                callback(Messages.FirstOrDefault(m => m.MessageId == messageId));
         }
 
         public void GetMessages(IChannel channel, Action<IEnumerable<IMessage>> callback, int amount, int offset) {
@@ -26,7 +28,7 @@ namespace SharpChat.Messages.Storage {
                     start = 0;
                 }
 
-                callback.Invoke(subset.Skip(start).Take(amount));
+                callback(subset.Skip(start).Take(amount));
             }
         }
 

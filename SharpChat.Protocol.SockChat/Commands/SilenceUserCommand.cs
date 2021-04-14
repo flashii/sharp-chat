@@ -22,31 +22,34 @@ namespace SharpChat.Protocol.SockChat.Commands {
                 throw new CommandNotAllowedException(ctx.Args);
 
             string userName = ctx.Args.ElementAtOrDefault(1);
-            IUser user;
-            if(string.IsNullOrEmpty(userName) || (user = Users.GetUser(userName)) == null)
+            if(string.IsNullOrEmpty(userName))
                 throw new UserNotFoundCommandException(userName);
 
-            if(user == ctx.User)
-                throw new SelfSilenceCommandException();
-            if(user.Rank >= user.Rank)
-                throw new SilenceNotAllowedCommandException();
-            //if(user.IsSilenced)
-            //    throw new AlreadySilencedCommandException();
+            Users.GetUser(userName, user => {
+                if(user == null)
+                    throw new UserNotFoundCommandException(userName);
+                if(user == ctx.User)
+                    throw new SelfSilenceCommandException();
+                if(user.Rank >= user.Rank)
+                    throw new SilenceNotAllowedCommandException();
+                //if(user.IsSilenced)
+                //    throw new AlreadySilencedCommandException();
 
-            string durationArg = ctx.Args.ElementAtOrDefault(2);
+                string durationArg = ctx.Args.ElementAtOrDefault(2);
 
-            if(!string.IsNullOrEmpty(durationArg)) {
-                if(!double.TryParse(durationArg, out double durationRaw))
-                    throw new CommandFormatException();
-                //ctx.Chat.Users.Silence(user, TimeSpan.FromSeconds(durationRaw));
-            } //else
-                //ctx.Chat.Users.Silence(user);
+                if(!string.IsNullOrEmpty(durationArg)) {
+                    if(!double.TryParse(durationArg, out double durationRaw))
+                        throw new CommandFormatException();
+                    //ctx.Chat.Users.Silence(user, TimeSpan.FromSeconds(durationRaw));
+                } //else
+                  //ctx.Chat.Users.Silence(user);
 
-            // UserManager
-            //user.SendPacket(new SilenceNoticePacket(Sender));
+                // UserManager
+                //user.SendPacket(new SilenceNoticePacket(Sender));
 
-            // Remain? Also UserManager?
-            ctx.Connection.SendPacket(new SilenceResponsePacket(Sender, user));
+                // Remain? Also UserManager?
+                ctx.Connection.SendPacket(new SilenceResponsePacket(Sender, user));
+            });
             return true;
         }
     }

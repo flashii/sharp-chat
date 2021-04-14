@@ -24,13 +24,14 @@ namespace SharpChat.Protocol.SockChat.Commands {
             if(!long.TryParse(ctx.Args.ElementAtOrDefault(1), out long messageId))
                 throw new CommandFormatException();
 
-            IMessage delMsg = Messages.GetMessage(messageId);
+            Messages.GetMessage(messageId, msg => {
+                if(msg == null || msg.Sender.Rank > ctx.User.Rank
+                    || (!deleteAnyMessage && msg.Sender.UserId != ctx.User.UserId))
+                    throw new MessageNotFoundCommandException(); // this exception will go lost but that's fine for now
 
-            if(delMsg == null || delMsg.Sender.Rank > ctx.User.Rank
-                || (!deleteAnyMessage && delMsg.Sender.UserId != ctx.User.UserId))
-                throw new MessageNotFoundCommandException();
+                Messages.Delete(ctx.User, msg);
+            });
 
-            Messages.Delete(ctx.User, delMsg);
             return true;
         }
     }

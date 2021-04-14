@@ -38,29 +38,28 @@ namespace SharpChat.Users {
         public void Disconnect(IUser user, UserDisconnectReason reason = UserDisconnectReason.Unknown) {
             if(user == null)
                 return;
-            lock(Sync)
-                Dispatcher.DispatchEvent(this, new UserDisconnectEvent(user, reason));
+            Dispatcher.DispatchEvent(this, new UserDisconnectEvent(user, reason));
         }
 
         private void OnDisconnect(object sender, UserDisconnectEvent ude) {
-            lock(Sync) {
-                IUser user = GetUser(ude.User.UserId);
+            GetUser(ude.User, user => {
                 if(user == null)
                     return;
                 if(user is IEventHandler ueh)
                     ueh.HandleEvent(sender, ude);
-            }
+            });
         }
 
         private void OnUpdate(object sender, UserUpdateEvent uue) {
-            lock(Sync) {
-                IUser user = GetUser(uue.User.UserId);
+            GetUser(uue.User, user => {
+                if(user == null)
+                    return;
                 if(user is IEventHandler ueh)
                     ueh.HandleEvent(sender, uue);
-            }
+            });
         }
 
-        public bool Contains(IUser user) {
+        private bool Contains(IUser user) {
             if(user == null)
                 return false;
 
@@ -69,60 +68,45 @@ namespace SharpChat.Users {
                     || Users.Any(x => x.Equals(user) || x.UserName.ToLowerInvariant() == user.UserName.ToLowerInvariant());
         }
 
-        public IUser GetUser(Func<IUser, bool> predicate) {
+        public void GetUser(Func<IUser, bool> predicate, Action<IUser> callback) {
             if(predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
             lock(Sync)
-                return Users.FirstOrDefault(predicate);
+                callback(Users.FirstOrDefault(predicate));
         }
 
-        public IUser GetUser(long userId) {
-            lock(Sync)
-                return Users.FirstOrDefault(x => x.UserId == userId);
+        public void GetUser(long userId, Action<IUser> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            GetUser(u => u.UserId == userId, callback);
         }
 
-        public IUser GetUser(string username, bool includeNickName = true, bool includeDisplayName = true) {
-            if(string.IsNullOrWhiteSpace(username))
-                return null;
-            username = username.ToLowerInvariant();
-
-            lock(Sync)
-                return Users.FirstOrDefault(x => x.UserName.ToLowerInvariant() == username
-                    || (includeNickName && x.NickName?.ToLowerInvariant() == username)
-                    /*|| (includeDisplayName && x.GetDisplayName().ToLowerInvariant() == username)*/);
-        }
-
-        public IUser GetUser(IUser user) {
+        public void GetUser(IUser user, Action<IUser> callback) {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
-            lock(Sync) {
-                if(user is User u && Users.Contains(u))
-                    return u;
-                return Users.FirstOrDefault(u => u.Equals(user));
-            }
-        }
-
-        public void GetUsers(int minRank, Action<IEnumerable<IUser>> callback) {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
-            lock(Sync)
-                callback.Invoke(Users.Where(u => u.Rank >= minRank));
+            GetUser(user.Equals, callback);
         }
 
-        public void GetUsers(IEnumerable<long> ids, Action<IEnumerable<IUser>> callback) {
-            if(ids == null)
-                throw new ArgumentNullException(nameof(ids));
+        // feel like this one should be obsoleted entirely 
+        public void GetUser(string username, Action<IUser> callback, bool includeNickName = true, bool includeDisplayName = true) {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
-            lock(Sync)
-                callback.Invoke(Users.Where(u => ids.Contains(u.UserId)));
+            if(string.IsNullOrWhiteSpace(username))
+                return;
+            GetUser(u => u.UserName.ToLowerInvariant() == username
+                    || (includeNickName && u.NickName?.ToLowerInvariant() == username)
+                    /*|| (includeDisplayName && u.GetDisplayName().ToLowerInvariant() == username)*/, callback);
         }
 
         public void GetUsers(Action<IEnumerable<IUser>> callback) {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
             lock(Sync)
-                callback.Invoke(Users);
+                callback(Users);
         }
 
         public void GetUsers(Func<IUser, bool> predicate, Action<IEnumerable<IUser>> callback) {
@@ -131,21 +115,42 @@ namespace SharpChat.Users {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
             lock(Sync)
-                callback.Invoke(Users.Where(predicate));
+                callback(Users.Where(predicate));
         }
 
-        public IUser Connect(IUserAuthResponse uar) {
-            lock(Sync) {
-                IUser user = GetUser(uar.UserId);
-                if(user == null)
-                    return Create(uar.UserId, uar.UserName, uar.Colour, uar.Rank, uar.Permissions);
+        public void GetUsers(int minRank, Action<IEnumerable<IUser>> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            GetUsers(u => u.Rank >= minRank, callback);
+        }
 
-                Update(user, uar.UserName, uar.Colour, uar.Rank, uar.Permissions);
-                return user;
+        public void GetUsers(IEnumerable<long> ids, Action<IEnumerable<IUser>> callback) {
+            if(ids == null)
+                throw new ArgumentNullException(nameof(ids));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            GetUsers(u => ids.Contains(u.UserId), callback);
+        }
+
+        public void Connect(IUserAuthResponse uar, Action<IUser> callback) {
+            if(uar == null)
+                throw new ArgumentNullException(nameof(uar));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            lock(Sync) {
+                GetUser(uar.UserId, user => {
+                    if(user == null)
+                        Create(uar.UserId, uar.UserName, uar.Colour, uar.Rank, uar.Permissions, callback: callback);
+                    else {
+                        Update(user, uar.UserName, uar.Colour, uar.Rank, uar.Permissions);
+                        callback(user);
+                    }
+                });
             }
         }
 
-        public IUser Create(
+        public void Create(
             long userId,
             string userName,
             Colour colour,
@@ -153,7 +158,8 @@ namespace SharpChat.Users {
             UserPermissions perms,
             UserStatus status = UserStatus.Online,
             string statusMessage = null,
-            string nickName = null
+            string nickName = null,
+            Action<IUser> callback = null
         ) {
             if(userName == null)
                 throw new ArgumentNullException(nameof(userName));
@@ -162,7 +168,7 @@ namespace SharpChat.Users {
                 User user = new User(userId, userName, colour, rank, perms, status, statusMessage, nickName);
                 Users.Add(user);
                 Dispatcher.DispatchEvent(this, new UserConnectEvent(user));
-                return user;
+                callback?.Invoke(user);
             }
         }
 
@@ -221,26 +227,17 @@ namespace SharpChat.Users {
         }
 
         public void HandleEvent(object sender, IEvent evt) {
-            lock(Sync)
-                switch(evt) {
-                    // Send to all users with minimum rank
-                    case ChannelCreateEvent cce:
-                        break;
-                    case ChannelUpdateEvent cue:
-                        break;
-                    case ChannelDeleteEvent cde:
-                        break;
-
-                    case UserConnectEvent uce:
-                        OnConnect(sender, uce);
-                        break;
-                    case UserUpdateEvent uue:
-                        OnUpdate(sender, uue);
-                        break;
-                    case UserDisconnectEvent ude:
-                        OnDisconnect(sender, ude);
-                        break;
-                }
+            switch(evt) {
+                case UserConnectEvent uce:
+                    OnConnect(sender, uce);
+                    break;
+                case UserUpdateEvent uue:
+                    OnUpdate(sender, uue);
+                    break;
+                case UserDisconnectEvent ude:
+                    OnDisconnect(sender, ude);
+                    break;
+            }
         }
     }
 }

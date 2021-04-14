@@ -4,10 +4,13 @@ using SharpChat.Database;
 using SharpChat.Database.Null;
 using SharpChat.DataProvider;
 using SharpChat.DataProvider.Null;
+using SharpChat.Protocol;
 using SharpChat.Protocol.IRC;
+using SharpChat.Protocol.Null;
 using SharpChat.Protocol.SockChat;
 using SharpChat.Reflection;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -47,6 +50,7 @@ namespace SharpChat {
             // Load database and data provider libraries
             ReflectionUtilities.LoadAssemblies(@"SharpChat.Database.*.dll");
             ReflectionUtilities.LoadAssemblies(@"SharpChat.DataProvider.*.dll");
+            ReflectionUtilities.LoadAssemblies(@"SharpChat.Protocol.*.dll");
 
             // Allow forcing a sqlite database through console flags
             string sqliteDbPath = GetFlagArgument(args, @"--dbpath");
@@ -76,22 +80,39 @@ namespace SharpChat {
             if(string.IsNullOrEmpty(portArg) || !ushort.TryParse(portArg, out ushort port))
                 port = DEFAULT_PORT;
 
+            ObjectConstructor<IServer, ServerAttribute, NullServer> serverConstructor = new ObjectConstructor<IServer, ServerAttribute, NullServer>();
+
             Logger.Write(@"Creating context...");
             using Context ctx = new Context(config.ScopeTo(@"chat"), databaseBackend, dataProvider);
 
-            Logger.Write(@"Starting Sock Chat server...");
-            using SockChatServer scs = new SockChatServer(ctx);
-            scs.Listen(new IPEndPoint(IPAddress.Any, port));
+            List<IServer> servers = new List<IServer>();
 
+            // Crusty temporary solution, just want to have the variable constructor arguments for servers in place already
+
+            string[] serverNames = new[] {
+                @"sockchat",
 #if DEBUG
-            Logger.Write(@"Starting IRC server...");
-            using IRCServer ircs = new IRCServer(ctx);
-            ircs.Listen(new IPEndPoint(IPAddress.Any, 6667));
+                @"irc",
 #endif
+            };
+
+            foreach(string serverName in serverNames) {
+                Logger.Write($@"Starting {serverName} server...");
+                IServer server = serverConstructor.Construct(serverName, ctx, config.ScopeTo(serverName));
+                servers.Add(server);
+
+                if(server is SockChatServer)
+                    server.Listen(new IPEndPoint(IPAddress.Any, port));
+                else if(server is IRCServer)
+                    server.Listen(new IPEndPoint(IPAddress.Any, 6667));
+            }
 
             using ManualResetEvent mre = new ManualResetEvent(false);
             Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
             mre.WaitOne();
+
+            foreach(IServer server in servers)
+                server.Dispose();
 
             if(dataProvider is IDisposable dpd)
                 dpd.Dispose();

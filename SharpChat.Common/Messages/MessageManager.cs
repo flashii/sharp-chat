@@ -16,8 +16,6 @@ namespace SharpChat.Messages {
         private CachedValue<int> TextMaxLengthValue { get; }
         public int TextMaxLength => TextMaxLengthValue;
 
-        private readonly object Sync = new object();
-
         public MessageManager(IEventDispatcher dispatcher, IMessageStorage storage, IConfig config) {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             Storage = storage ?? throw new ArgumentNullException(nameof(storage));
@@ -39,11 +37,9 @@ namespace SharpChat.Messages {
             if(text.Length > TextMaxLength)
                 throw new ArgumentException(@"Provided text is too long.", nameof(text));
 
-            lock(Sync) {
-                Message message = new Message(channel, sender, text, isAction);
-                Dispatcher.DispatchEvent(this, new MessageCreateEvent(message));
-                return message;
-            }
+            Message message = new Message(channel, sender, text, isAction);
+            Dispatcher.DispatchEvent(this, new MessageCreateEvent(message));
+            return message;
         }
 
         public void Edit(IUser editor, IMessage message, string text = null) {
@@ -59,12 +55,10 @@ namespace SharpChat.Messages {
             if(text.Length > TextMaxLength)
                 throw new ArgumentException(@"Provided text is too long.", nameof(text));
 
-            lock(Sync) {
-                MessageUpdateEvent mue = new MessageUpdateEvent(message, editor, text);
-                if(message is IEventHandler meh)
-                    meh.HandleEvent(this, mue);
-                Dispatcher.DispatchEvent(this, mue);
-            }
+            MessageUpdateEvent mue = new MessageUpdateEvent(message, editor, text);
+            if(message is IEventHandler meh)
+                meh.HandleEvent(this, mue);
+            Dispatcher.DispatchEvent(this, mue);
         }
 
         public void Delete(IUser user, IMessage message) {
@@ -73,16 +67,17 @@ namespace SharpChat.Messages {
             if(message == null)
                 throw new ArgumentNullException(nameof(message));
 
-            lock(Sync) {
-                MessageDeleteEvent mde = new MessageDeleteEvent(user, message);
-                if(message is IEventHandler meh)
-                    meh.HandleEvent(this, mde);
-                Dispatcher.DispatchEvent(this, mde);
-            }
+            MessageDeleteEvent mde = new MessageDeleteEvent(user, message);
+            if(message is IEventHandler meh)
+                meh.HandleEvent(this, mde);
+            Dispatcher.DispatchEvent(this, mde);
         }
 
-        public IMessage GetMessage(long messageId)
-            => Storage.GetMessage(messageId);
+        public void GetMessage(long messageId, Action<IMessage> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            Storage.GetMessage(messageId, callback);
+        }
 
         public void GetMessages(IChannel channel, Action<IEnumerable<IMessage>> callback, int amount = 20, int offset = 0) {
             if(channel == null)

@@ -69,42 +69,44 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
                             return;
                         }
 
-                        IUser user = Users.Connect(res);
+                        Users.Connect(res, user => {
+                            Sessions.HasAvailableSessions(user, available => {
+                                // Enforce a maximum amount of connections per user
+                                if(!available) {
+                                    // map somethign to this
+                                    //ctx.Connection.SendPacket(new AuthFailPacket(AuthFailReason.MaxSessions));
+                                    ctx.Connection.Close();
+                                    return;
+                                }
 
-                        // Enforce a maximum amount of connections per user
-                        if(Sessions.GetAvailableSessionCount(user) < 1) {
-                            // map somethign to this
-                            //ctx.Connection.SendPacket(new AuthFailPacket(AuthFailReason.MaxSessions));
-                            ctx.Connection.Close();
-                            return;
-                        }
+                                Sessions.Create(ctx.Connection, user, session => {
+                                    ctx.Connection.SendReply(new WelcomeReply(Server, user));
+                                    ctx.Connection.SendReply(new YourHostReply(Server));
+                                    ctx.Connection.SendReply(new CreatedReply(Context));
+                                    ctx.Connection.SendReply(new MyInfoReply(Server));
+                                    ctx.Connection.SendReply(new ISupportReply(Server));
 
-                        ISession sess = Sessions.Create(ctx.Connection, user);
+                                    if(File.Exists(WELCOME)) {
+                                        ctx.Connection.SendReply(new MotdStartReply());
 
-                        ctx.Connection.SendReply(new WelcomeReply(Server, user));
-                        ctx.Connection.SendReply(new YourHostReply(Server));
-                        ctx.Connection.SendReply(new CreatedReply(Context));
-                        ctx.Connection.SendReply(new MyInfoReply(Server));
-                        ctx.Connection.SendReply(new ISupportReply(Server));
+                                        IEnumerable<string> lines = File.ReadAllLines(WELCOME).Where(x => !string.IsNullOrWhiteSpace(x));
+                                        string line = lines.ElementAtOrDefault(RNG.Next(lines.Count()));
+                                        if(!string.IsNullOrWhiteSpace(line))
+                                            ctx.Connection.SendReply(new MotdReply(line));
 
-                        if(File.Exists(WELCOME)) {
-                            ctx.Connection.SendReply(new MotdStartReply());
+                                        ctx.Connection.SendReply(new MotdEndReply());
+                                    } else
+                                        ctx.Connection.SendReply(new NoMotdReply());
 
-                            IEnumerable<string> lines = File.ReadAllLines(WELCOME).Where(x => !string.IsNullOrWhiteSpace(x));
-                            string line = lines.ElementAtOrDefault(RNG.Next(lines.Count()));
-                            if(!string.IsNullOrWhiteSpace(line))
-                                ctx.Connection.SendReply(new MotdReply(line));
-
-                            ctx.Connection.SendReply(new MotdEndReply());
-                        } else
-                            ctx.Connection.SendReply(new NoMotdReply());
-
-                        // are these necessary?
-                        ctx.Connection.SendReply(new ListUserClientReply());
-                        ctx.Connection.SendReply(new ListUserOperatorsReply());
-                        ctx.Connection.SendReply(new ListUserUnknownReply());
-                        ctx.Connection.SendReply(new ListUserChannelsReply());
-                        ctx.Connection.SendReply(new ListUserMeReply());
+                                    // are these necessary?
+                                    ctx.Connection.SendReply(new ListUserClientReply());
+                                    ctx.Connection.SendReply(new ListUserOperatorsReply());
+                                    ctx.Connection.SendReply(new ListUserUnknownReply());
+                                    ctx.Connection.SendReply(new ListUserChannelsReply());
+                                    ctx.Connection.SendReply(new ListUserMeReply());
+                                });
+                            });
+                        });
                     }, exceptionHandler);
                 },
                 exceptionHandler

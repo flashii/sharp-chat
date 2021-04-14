@@ -1,12 +1,8 @@
 ﻿using SharpChat.Channels;
-using SharpChat.Protocol.IRC.Channels;
 using SharpChat.Protocol.IRC.Replies;
 using SharpChat.Users;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
     public class InviteCommand : IClientCommand { // reintroduce this into Sock Chat
@@ -26,29 +22,35 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
 
         public void HandleCommand(ClientCommandContext ctx) {
             string userName = ctx.Arguments.ElementAtOrDefault(0) ?? string.Empty;
-            IUser user = Users.GetUser(userName);
 
-            if(user == null) {
-                ctx.Connection.SendReply(new NoSuchNickReply(userName));
-                return;
-            }
+            Users.GetUser(userName, user => {
+                if(user == null) {
+                    ctx.Connection.SendReply(new NoSuchNickReply(userName));
+                    return;
+                }
 
-            string channelName = ctx.Arguments.ElementAtOrDefault(1) ?? string.Empty;
-            IChannel channel = string.IsNullOrWhiteSpace(channelName)
-                ? null
-                : Channels.GetChannel(c => channelName.Equals(c.GetIRCName()));
+                string channelName = ctx.Arguments.ElementAtOrDefault(1) ?? string.Empty;
+                if(string.IsNullOrWhiteSpace(channelName)) {
+                    ctx.Connection.SendReply(new NoSuchChannelReply(channelName));
+                    return;
+                }
 
-            if(channel == null) {
-                ctx.Connection.SendReply(new NoSuchChannelReply(channelName));
-                return;
-            }
+                Channels.GetChannel(channelName, channel => {
+                    if(channel == null) {
+                        ctx.Connection.SendReply(new NoSuchChannelReply(channelName));
+                        return;
+                    }
 
-            if(ChannelUsers.HasUser(channel, user)) {
-                ctx.Connection.SendReply(new UserOnChannelReply(user, channel));
-                return;
-            }
+                    ChannelUsers.HasUser(channel, user, hasUser => {
+                        if(!hasUser) {
+                            ctx.Connection.SendReply(new UserOnChannelReply(user, channel));
+                            return;
+                        }
 
-            // todo: dispatch invite
+                        // todo: dispatch invite
+                    });
+                });
+            });
         }
     }
 }

@@ -13,7 +13,10 @@ namespace SharpChat.Messages.Storage {
             RunMigrations();
         }
 
-        public IMessage GetMessage(long messageId) {
+        public void GetMessage(long messageId, Action<IMessage> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
             IMessage msg = null;
 
             Wrapper.RunQuery(
@@ -32,7 +35,7 @@ namespace SharpChat.Messages.Storage {
                 Wrapper.CreateParam(@"id", messageId)
             );
 
-            return msg;
+            callback(msg);
         }
 
         public void GetMessages(IChannel channel, Action<IEnumerable<IMessage>> callback, int amount, int offset) {
@@ -58,7 +61,7 @@ namespace SharpChat.Messages.Storage {
             );
 
             msgs.Reverse();
-            callback.Invoke(msgs);
+            callback(msgs);
         }
 
         private void StoreMessage(MessageCreateEvent mce) {

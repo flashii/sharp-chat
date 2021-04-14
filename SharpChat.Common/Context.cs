@@ -118,12 +118,6 @@ namespace SharpChat {
             Users.Disconnect(user, reason);
         }
 
-        [Obsolete(@"Refactor to use ChannelUsers.LeaveChannel and Users.Disconnect")]
-        public void UserLeave(IChannel chan, IUser user, UserDisconnectReason reason = UserDisconnectReason.Leave) {
-            // handle in channelusers
-            //chan.SendPacket(new UserDisconnectPacket(DateTimeOffset.Now, user, reason));
-        }
-
         [Obsolete(@"Use ChannelUsers.JoinChannel")]
         public void JoinChannel(IUser user, IChannel channel) {
             // handle in channelusers
@@ -146,11 +140,31 @@ namespace SharpChat {
         }
 
         public void AddEventHandler(IEventHandler handler) {
+            if(handler == null)
+                throw new ArgumentNullException(nameof(handler));
             lock(Sync)
                 if(!EventHandlers.Contains(handler))
                     EventHandlers.Add(handler);
         }
 
+        public void RemoveEventHandler(IEventHandler handler) {
+            if(handler == null)
+                throw new ArgumentNullException(nameof(handler));
+            // prevent asshattery
+            if(handler == Sessions
+                || handler == Users
+                || handler == Channels
+                || handler == ChannelUsers
+                || handler == Messages)
+                return;
+            lock(Sync)
+                EventHandlers.Remove(handler);
+        }
+
+        // DispatchEvent is responsible for cool deadlocks
+        // A proper queue should be implemented and DispatchEvent should become non-blocking
+        // Most uses of it should be fine with this but I think there's a couple instances where blocking is assumed
+        // Retrieval functions in the managers should also become assumedly non-blocking to provide the possibility of pulling shit from DB/DP
         public void DispatchEvent(object sender, IEvent evt) {
             if(evt == null)
                 throw new ArgumentNullException(nameof(evt));

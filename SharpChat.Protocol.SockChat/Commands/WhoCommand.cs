@@ -29,23 +29,23 @@ namespace SharpChat.Protocol.SockChat.Commands {
         }
 
         private void WhoChannel(CommandContext ctx, string channelName) {
-            IChannel channel = Channels.GetChannel(channelName);
+            Channels.GetChannel(channelName, channel => {
+                if(channel == null)
+                    throw new ChannelNotFoundCommandException(channelName);
 
-            if(channel == null)
-                throw new ChannelNotFoundCommandException(channelName);
+                if(channel.MinimumRank > ctx.User.Rank || (channel.HasPassword && !ctx.User.Can(UserPermissions.JoinAnyChannel)))
+                    throw new UserListChannelNotFoundCommandException(channelName);
 
-            if(channel.MinimumRank > ctx.User.Rank || (channel.HasPassword && !ctx.User.Can(UserPermissions.JoinAnyChannel)))
-                throw new UserListChannelNotFoundCommandException(channelName);
-
-            ChannelUsers.GetUsers(
-                channel,
-                users => ctx.Connection.SendPacket(new UserListResponsePacket(
-                    Sender,
+                ChannelUsers.GetUsers(
                     channel,
-                    ctx.User,
-                    users.OrderByDescending(u => u.Rank)
-                ))
-            );
+                    users => ctx.Connection.SendPacket(new UserListResponsePacket(
+                        Sender,
+                        channel,
+                        ctx.User,
+                        users.OrderByDescending(u => u.Rank)
+                    ))
+                );
+            });
         }
 
         public bool DispatchCommand(CommandContext ctx) {

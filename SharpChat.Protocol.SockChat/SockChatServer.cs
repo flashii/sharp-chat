@@ -1,6 +1,4 @@
-﻿using SharpChat.Channels;
-using SharpChat.Events;
-using SharpChat.Messages;
+﻿using SharpChat.Events;
 using SharpChat.Protocol.SockChat.Commands;
 using SharpChat.Protocol.SockChat.PacketHandlers;
 using SharpChat.Protocol.SockChat.Packets;
@@ -13,6 +11,7 @@ using System.Linq;
 using System.Net;
 
 namespace SharpChat.Protocol.SockChat {
+    [Server(@"sockchat")]
     public class SockChatServer : IServer {
         public const int DEFAULT_MAX_CONNECTIONS = 5;
 
@@ -103,11 +102,10 @@ namespace SharpChat.Protocol.SockChat {
         }
 
         private void OnMessage(SockChatConnection conn, string msg) {
-            ISession sess = Context.Sessions.GetLocalSession(conn);
-            bool hasSession = sess != null;
+            bool hasSession = conn.Session != null;
 
             RateLimitState rateLimit = RateLimitState.None;
-            if(!hasSession || !Context.RateLimiter.HasRankException(sess.User))
+            if(!hasSession || !Context.RateLimiter.HasRankException(conn.Session.User))
                 rateLimit = Context.RateLimiter.BumpConnection(conn);
             
             Logger.Debug($@"[{conn}] {rateLimit}");
@@ -125,14 +123,14 @@ namespace SharpChat.Protocol.SockChat {
                     return;
 
                 if(rateLimit == RateLimitState.Drop) {
-                    Context.BanUser(sess.User, Context.RateLimiter.BanDuration, UserDisconnectReason.Flood);
+                    Context.BanUser(conn.Session.User, Context.RateLimiter.BanDuration, UserDisconnectReason.Flood);
                     return;
                 } /*else if(rateLimit == RateLimitState.Warn)
                     sess.SendPacket(new FloodWarningPacket(Context.Bot));*/
             }
 
             if(PacketHandlers.TryGetValue(packetId, out IPacketHandler handler))
-                handler.HandlePacket(new PacketHandlerContext(args, sess, conn));
+                handler.HandlePacket(new PacketHandlerContext(args, conn));
         }
 
         // the implementation of Everything here needs to be revised
@@ -231,21 +229,22 @@ namespace SharpChat.Protocol.SockChat {
                         });
                         break;
                     case MessageUpdateEvent mue:
-                        IMessage muem = Context.Messages.GetMessage(mue.MessageId);
-                        if(muem == null)
-                            break;
+                        Context.Messages.GetMessage(mue.MessageId, msg => {
+                            if(msg == null)
+                                return;
 
-                        MessageDeletePacket muepd = new MessageDeletePacket(mue);
-                        MessageCreatePacket muecd = new MessageCreatePacket(new MessageCreateEvent(muem));
+                            MessageDeletePacket muepd = new MessageDeletePacket(mue);
+                            MessageCreatePacket muecd = new MessageCreatePacket(new MessageCreateEvent(msg));
 
-                        Context.ChannelUsers.GetUsers(mue.Channel, users => {
-                            foreach(IUser user in users) {
-                                SockChatConnection muec = Connections.FirstOrDefault(c => c.Session != null && user.Equals(c.Session.User));
-                                if(muec == null)
-                                    break;
-                                muec.SendPacket(muepd);
-                                muec.SendPacket(muecd);
-                            }
+                            Context.ChannelUsers.GetUsers(mue.Channel, users => {
+                                foreach(IUser user in users) {
+                                    SockChatConnection muec = Connections.FirstOrDefault(c => c.Session != null && user.Equals(c.Session.User));
+                                    if(muec == null)
+                                        break;
+                                    muec.SendPacket(muepd);
+                                    muec.SendPacket(muecd);
+                                }
+                            });
                         });
                         break;
 
@@ -271,6 +270,7 @@ namespace SharpChat.Protocol.SockChat {
             if(IsDisposed)
                 return;
             IsDisposed = true;
+            Context.RemoveEventHandler(this);
             Server?.Dispose();
         }
     }

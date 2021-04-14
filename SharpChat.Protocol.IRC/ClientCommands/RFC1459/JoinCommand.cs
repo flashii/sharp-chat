@@ -31,32 +31,42 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
 
             for(int i = 0; i < names.Length; ++i) {
                 string name = names[i];
-                IChannel channel = Channels.GetChannel(c => name.Equals(c.GetIRCName()));
 
-                if(channel == null) { // todo: check permissions and allow channel creation
-                    ctx.Connection.SendReply(new BadChannelMaskReply(name));
-                    continue;
-                } else if(ChannelUsers.HasSession(channel, ctx.Session))
-                    continue; // just continue if we're already in the channel
+                Channels.GetChannel(c => name.Equals(c.GetIRCName()), channel => {
+                    if(channel == null) { // todo: check permissions and allow channel creation
+                        ctx.Connection.SendReply(new BadChannelMaskReply(name));
+                        return;
+                    } 
+                    
+                    ChannelUsers.HasSession(channel, ctx.Session, hasSession => {
+                        // just continue if we're already in the channel
+                        if(hasSession)
+                            return;
 
-                // introduce channel bans at some point
+                        // introduce channel bans at some point
 
-                // introduce invites at some point
+                        // introduce invites at some point
 
-                if(channel.HasMaxCapacity() && ChannelUsers.CountUsers(channel) >= channel.MaxCapacity) {
-                    ctx.Connection.SendReply(new ChannelIsFullReply(channel));
-                    continue;
-                }
+                        // add rank check
 
-                if(channel.HasPassword) {
-                    string password = passwords.ElementAtOrDefault(i) ?? string.Empty;
-                    if(!Channels.VerifyPassword(channel, password)) {
-                        ctx.Connection.SendReply(new BadChannelKeyReply(channel));
-                        continue;
-                    }
-                }
+                        ChannelUsers.CheckOverCapacity(channel, ctx.User, isOverCapacity => {
+                            if(isOverCapacity) {
+                                ctx.Connection.SendReply(new ChannelIsFullReply(channel));
+                                return;
+                            }
 
-                ChannelUsers.JoinChannel(channel, ctx.Session);
+                            string password = passwords.ElementAtOrDefault(i) ?? string.Empty;
+                            Channels.VerifyPassword(channel, password, success => {
+                                if(!success) {
+                                    ctx.Connection.SendReply(new BadChannelKeyReply(channel));
+                                    return;
+                                }
+
+                                ChannelUsers.JoinChannel(channel, ctx.Session);
+                            });
+                        });
+                    });
+                });
             }
         }
     }

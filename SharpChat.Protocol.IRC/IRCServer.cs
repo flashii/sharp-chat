@@ -1,13 +1,12 @@
 ﻿using SharpChat.Channels;
+using SharpChat.Configuration;
 using SharpChat.Events;
-using SharpChat.Messages;
 using SharpChat.Protocol.IRC.ClientCommands;
 using SharpChat.Protocol.IRC.ClientCommands.Modern;
 using SharpChat.Protocol.IRC.ClientCommands.RFC1459;
 using SharpChat.Protocol.IRC.ClientCommands.RFC2810;
 using SharpChat.Protocol.IRC.Replies;
 using SharpChat.Protocol.IRC.ServerCommands;
-using SharpChat.Protocol.IRC.Users;
 using SharpChat.Sessions;
 using System;
 using System.Collections.Generic;
@@ -18,12 +17,14 @@ using System.Text;
 using System.Threading;
 
 namespace SharpChat.Protocol.IRC {
+    [Server(@"irc")]
     public class IRCServer : IServer {
         private const int BUFFER_SIZE = 2048;
 
         public const char PREFIX = ':';
 
         private Context Context { get; }
+        private IConfig Config { get; }
         private Socket Socket { get; set; }
 
         private Dictionary<Socket, IRCConnection> Connections { get; } = new Dictionary<Socket, IRCConnection>();
@@ -35,12 +36,21 @@ namespace SharpChat.Protocol.IRC {
 
         private readonly object Sync = new object();
 
-        public string ServerHost => @"irc.railgun.sh"; // read this from CFG
-        public string NetworkName => @"Railgun"; // this also
+        // I feel like these two could be generalised
+        private CachedValue<string> ServerHostValue { get; }
+        private CachedValue<string> NetworkNameValue { get; }
 
-        public IRCServer(Context ctx) {
+        public string ServerHost => ServerHostValue;
+        public string NetworkName => NetworkNameValue;
+
+        public IRCServer(Context ctx, IConfig config) {
             Context = ctx ?? throw new ArgumentNullException(nameof(ctx));
+            Config = config ?? throw new ArgumentNullException(nameof(config));
+
             Context.AddEventHandler(this);
+
+            ServerHostValue = Config.ReadCached(@"host", @"irc.example.com");
+            NetworkNameValue = Config.ReadCached(@"network", @"SharpChat");
 
             Dictionary<string, IClientCommand> handlers = new Dictionary<string, IClientCommand>();
             void addHandler(IClientCommand handler) {
@@ -48,7 +58,7 @@ namespace SharpChat.Protocol.IRC {
             };
 
             // RFC 1459
-            addHandler(new AdminCommand());
+            addHandler(new AdminCommand(this));
             addHandler(new AwayCommand(Context.Users));
             addHandler(new InfoCommand());
             addHandler(new InviteCommand(Context.Users, Context.Channels, Context.ChannelUsers));
@@ -155,10 +165,6 @@ namespace SharpChat.Protocol.IRC {
         }
 
         private void OnReceive(IRCConnection conn, string line) {
-            Logger.Debug($@"[{conn}] {line}");
-
-            ISession session = Context.Sessions.GetLocalSession(conn);
-
             // do rate limiting
 
             string command = null;
@@ -207,7 +213,7 @@ namespace SharpChat.Protocol.IRC {
             args.RemoveAll(string.IsNullOrWhiteSpace);
 
             if(Commands.ContainsKey(command))
-                Commands[command].HandleCommand(new ClientCommandContext(session, conn, args));
+                Commands[command].HandleCommand(new ClientCommandContext(conn, args));
         }
 
         // see comment in SockChatServer class
@@ -250,17 +256,21 @@ namespace SharpChat.Protocol.IRC {
         }
 
         private void UserJoinChannel(IChannel channel, string sessionId) {
-            ISession csjes = Context.Sessions.GetLocalSession(sessionId);
-            if(csjes == null || csjes.Connection is not IRCConnection csjec)
-                return;
-            IChannel csjech = Context.Channels.GetChannel(channel);
-            csjec.SendCommand(new ServerJoinCommand(csjech, csjes.User));
-            if(string.IsNullOrEmpty(csjech.Topic))
-                csjec.SendReply(new NoTopicReply(csjech));
-            else
-                csjec.SendReply(new TopicReply(csjech));
-            Context.ChannelUsers.GetUsers(csjech, users => NamesReply.SendBatch(csjec, csjech, users));
-            csjec.SendReply(new EndOfNamesReply(csjech));
+            Context.Sessions.GetLocalSession(sessionId, session => {
+                if(session == null || session.Connection is not IRCConnection csjec)
+                    return;
+
+                Context.Channels.GetChannel(channel, channel => {
+                    csjec.SendCommand(new ServerJoinCommand(channel, session.User));
+                    if(string.IsNullOrEmpty(channel.Topic))
+                        csjec.SendReply(new NoTopicReply(channel));
+                    else
+                        csjec.SendReply(new TopicReply(channel));
+                    Context.ChannelUsers.GetUsers(channel, users => NamesReply.SendBatch(csjec, channel, users));
+                    csjec.SendReply(new EndOfNamesReply(channel));
+                });
+            });
+
         }
 
         private bool IsDisposed;
@@ -274,6 +284,7 @@ namespace SharpChat.Protocol.IRC {
             if(IsDisposed)
                 return;
             IsDisposed = true;
+            Context.RemoveEventHandler(this);
 
             IsRunning = false;
 

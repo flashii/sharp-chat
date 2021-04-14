@@ -22,23 +22,26 @@ namespace SharpChat.Protocol.SockChat.Commands {
                 throw new CommandNotAllowedException(ctx.Args);
 
             string userName = ctx.Args.ElementAtOrDefault(1);
-            IUser user;
-            if(string.IsNullOrEmpty(userName) || (user = Users.GetUser(userName)) == null)
+            if(string.IsNullOrEmpty(userName))
                 throw new UserNotFoundCommandException(userName);
 
-            if(user.Rank >= ctx.User.Rank)
-                throw new RevokeSilenceNotAllowedCommandException();
+            Users.GetUser(userName, user => {
+                if(user == null)
+                    throw new UserNotFoundCommandException(userName);
+                if(user.Rank >= ctx.User.Rank)
+                    throw new RevokeSilenceNotAllowedCommandException();
 
-            //if(!user.IsSilenced)
-            //    throw new NotSilencedCommandException();
+                //if(!user.IsSilenced)
+                //    throw new NotSilencedCommandException();
 
-            //ctx.Chat.Users.RevokeSilence(user);
+                //ctx.Chat.Users.RevokeSilence(user);
 
-            // UserManager
-            //user.SendPacket(new SilenceRevokeNoticePacket(Sender));
-            
-            // Remain? Also UserManager?
-            ctx.Connection.SendPacket(new SilenceRevokeResponsePacket(Sender, user));
+                // UserManager
+                //user.SendPacket(new SilenceRevokeNoticePacket(Sender));
+
+                // Remain? Also UserManager?
+                ctx.Connection.SendPacket(new SilenceRevokeResponsePacket(Sender, user));
+            });
             return true;
         }
     }

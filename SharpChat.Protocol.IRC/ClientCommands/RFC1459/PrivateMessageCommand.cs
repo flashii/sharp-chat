@@ -1,5 +1,6 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Messages;
+using SharpChat.Protocol.IRC.Channels;
 using SharpChat.Protocol.IRC.Replies;
 using System;
 using System.Linq;
@@ -36,23 +37,32 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
                 return;
             }
 
-            IChannel channel = null;
+            Func<IChannel, bool> predicate = null;
             char channelPrefix = channelName.First();
 
             if(channelPrefix == '#')
-                channel = Channels.GetChannel(channelName[1..]);
+                predicate = new Func<IChannel, bool>(c => channelName.Equals(c.GetIRCName()));
 
-            if(channel == null) {
+            if(predicate == null) {
                 ctx.Connection.SendReply(new NoSuchNickReply(channelName));
                 return;
             }
 
-            if(!ChannelUsers.HasUser(channel, ctx.User)) {
-                ctx.Connection.SendReply(new CannotSendToChannelReply(channel));
-                return;
-            }
+            Channels.GetChannel(predicate, channel => {
+                if(channel == null) {
+                    ctx.Connection.SendReply(new NoSuchNickReply(channelName));
+                    return;
+                }
 
-            Messages.Create(ctx.User, channel, text);
+                ChannelUsers.HasUser(channel, ctx.User, hasUser => {
+                    if(!hasUser) {
+                        ctx.Connection.SendReply(new CannotSendToChannelReply(channel));
+                        return;
+                    }
+
+                    Messages.Create(ctx.User, channel, text);
+                });
+            });
         }
     }
 }

@@ -1,10 +1,17 @@
 ﻿using SharpChat.Protocol.IRC.Replies;
+using System;
 
 namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
     public class AdminCommand : IClientCommand {
         public const string NAME = @"ADMIN";
 
         public string CommandName => NAME;
+
+        private IRCServer Server { get; }
+
+        public AdminCommand(IRCServer server) {
+            Server = server ?? throw new ArgumentNullException(nameof(server));
+        }
 
         public void HandleCommand(ClientCommandContext ctx) {
             ctx.Connection.SendReply(new AdminMeReply());
