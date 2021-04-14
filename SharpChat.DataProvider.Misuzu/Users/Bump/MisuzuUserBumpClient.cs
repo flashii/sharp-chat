@@ -32,11 +32,15 @@ namespace SharpChat.DataProvider.Misuzu.Users.Bump {
                 return;
 
             List<MisuzuUserBumpInfo> infos = new List<MisuzuUserBumpInfo>();
+
+            // this is illegal
             foreach(IUser user in users) {
-                IPAddress addr = sessions.GetRemoteAddresses(user).FirstOrDefault();
-                if(addr == default)
-                    continue;
-                infos.Add(new MisuzuUserBumpInfo(user, addr));
+                sessions.GetRemoteAddresses(user, addrs => {
+                    IPAddress addr = addrs.FirstOrDefault();
+                    if(addr == default)
+                        return;
+                    infos.Add(new MisuzuUserBumpInfo(user, addr));
+                });
             }
 
             byte[] data = JsonSerializer.SerializeToUtf8Bytes(infos);

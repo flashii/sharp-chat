@@ -17,7 +17,7 @@ namespace SharpChat.Channels {
 
         private readonly object Sync = new object();
         private HashSet<long> Users { get; } = new HashSet<long>();
-        private HashSet<(string sessionId, long userId)> Sessions { get; } = new HashSet<(string, long)>();
+        private Dictionary<string, long> Sessions { get; } = new Dictionary<string, long>();
 
         public bool HasTopic
             => !string.IsNullOrWhiteSpace(Topic);
@@ -64,14 +64,21 @@ namespace SharpChat.Channels {
             if(session == null)
                 return false;
             lock(Sync)
-                return Sessions.Any(su => su.sessionId.Equals(session.SessionId));
+                return Sessions.ContainsKey(session.SessionId);
         }
 
-        public void GetUserIds(Action<IEnumerable<long>> callable) {
-            if(callable == null)
-                throw new ArgumentNullException(nameof(callable));
+        public void GetUserIds(Action<IEnumerable<long>> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
             lock(Sync)
-                callable(Users);
+                callback(Users);
+        }
+
+        public void GetSessionIds(Action<IEnumerable<string>> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            lock(Sync)
+                callback(Sessions.Keys);
         }
 
         public int CountUsers() {
@@ -83,13 +90,13 @@ namespace SharpChat.Channels {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
             lock(Sync)
-                return Sessions.Count(s => s.userId == user.UserId);
+                return Sessions.Values.Count(u => u == user.UserId);
         }
 
         public void HandleEvent(object sender, IEvent evt) {
-            lock(Sync)
-                switch(evt) {
-                    case ChannelUpdateEvent update: // Owner?
+            switch(evt) {
+                case ChannelUpdateEvent update: // Owner?
+                    lock(Sync) {
                         if(update.HasName)
                             Name = update.Name;
                         if(update.HasTopic)
@@ -104,24 +111,33 @@ namespace SharpChat.Channels {
                             AutoJoin = update.AutoJoin.Value;
                         if(update.MaxCapacity.HasValue)
                             MaxCapacity = update.MaxCapacity.Value;
-                        break;
+                    }
+                    break;
 
-                    case ChannelUserJoinEvent cuje:
-                        Sessions.Add((cuje.SessionId, cuje.User.UserId));
+                case ChannelUserJoinEvent cuje:
+                    lock(Sync) {
+                        Sessions.Add(cuje.SessionId, cuje.User.UserId);
                         Users.Add(cuje.User.UserId);
-                        break;
-                    case ChannelSessionJoinEvent csje:
-                        Sessions.Add((csje.SessionId, csje.User.UserId));
-                        break;
+                    }
+                    break;
+                case ChannelSessionJoinEvent csje:
+                    lock(Sync)
+                        Sessions.Add(csje.SessionId, csje.User.UserId);
+                    break;
 
-                    case ChannelUserLeaveEvent cule:
+                case ChannelUserLeaveEvent cule:
+                    lock(Sync) {
                         Users.Remove(cule.User.UserId);
-                        Sessions.RemoveWhere(su => su.userId == cule.User.UserId);
-                        break;
-                    case ChannelSessionLeaveEvent csle:
-                        Sessions.RemoveWhere(su => su.sessionId.Equals(csle.SessionId));
-                        break;
-                }
+                        Queue<string> delete = new Queue<string>(Sessions.Where(s => s.Value == cule.User.UserId).Select(s => s.Key));
+                        while(delete.TryDequeue(out string sessionId))
+                            Sessions.Remove(sessionId);
+                    }
+                    break;
+                case ChannelSessionLeaveEvent csle:
+                    lock(Sync)
+                        Sessions.Remove(csle.SessionId);
+                    break;
+            }
         }
 
         public bool Equals(IChannel other)

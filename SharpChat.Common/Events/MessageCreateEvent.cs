@@ -1,4 +1,5 @@
 ﻿using SharpChat.Messages;
+using SharpChat.Sessions;
 
 namespace SharpChat.Events {
     [Event(TYPE)]
@@ -9,8 +10,8 @@ namespace SharpChat.Events {
         public string Text { get; }
         public bool IsAction { get; }
 
-        public MessageCreateEvent(IMessage message)
-            : base(message.Channel, message.Sender, message.Created) {
+        public MessageCreateEvent(ISession session, IMessage message)
+            : base(message.Channel, message.Sender, session, session.Connection, message.Created) {
             MessageId = message.MessageId;
             Text = message.Text;
             IsAction = message.IsAction;

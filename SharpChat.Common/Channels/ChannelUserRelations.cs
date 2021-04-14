@@ -182,17 +182,49 @@ namespace SharpChat.Channels {
             callback(all);
         }
 
-        public void GetSessions(Func<ISession, bool> predicate, Action<IEnumerable<ISession>> callback) {
-            if(predicate == null)
-                throw new ArgumentNullException(nameof(predicate));
+        public void GetLocalSessions(IChannel channel, Action<IEnumerable<ISession>> callback) {
+            if(channel == null)
+                throw new ArgumentNullException(nameof(channel));
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
-            //callback(Sessions.GetSessions();
+            Channels.GetChannel(channel, c => {
+                if(c is not Channel channel) {
+                    callback(Enumerable.Empty<ISession>());
+                    return;
+                }
+
+                channel.GetSessionIds(ids => Sessions.GetLocalSessions(ids, callback));
+            });
         }
 
-        public void GetSessions(IChannel channel, Action<IEnumerable<ISession>> callback) {
-            //
+        public void GetLocalSessions(IUser user, Action<IEnumerable<ISession>> callback) {
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+
+            GetChannels(user, channels => {
+                if(!channels.Any()) {
+                    callback(Enumerable.Empty<ISession>());
+                    return;
+                }
+
+                Channels.GetChannels(channels, channels => {
+                    HashSet<string> sessionIds = new HashSet<string>();
+
+                    foreach(IChannel c in channels) {
+                        if(c is not Channel channel)
+                            continue;
+                        channel.GetSessionIds(ids => {
+                            foreach(string id in ids)
+                                sessionIds.Add(id);
+                        });
+                    }
+
+                    Sessions.GetLocalSessions(sessionIds, callback);
+                });
+            });
         }
 
         public void GetChannels(IUser user, Action<IEnumerable<IChannel>> callback) {
@@ -209,14 +241,6 @@ namespace SharpChat.Channels {
 
                 user.GetChannels(c => Channels.GetChannels(c, callback));
             });
-        }
-
-        public void GetChannels(ISession session, Action<IEnumerable<IChannel>> callback) {
-            if(session == null)
-                throw new ArgumentNullException(nameof(session));
-            if(callback == null)
-                throw new ArgumentNullException(nameof(callback));
-            //
         }
 
         public void JoinChannel(IChannel channel, ISession session) {
@@ -311,8 +335,10 @@ namespace SharpChat.Channels {
                     break;
 
                 case SessionDestroyEvent sde:
-                    if(Sessions.GetSessionCount(sde.User) < 1)
-                        Users.Disconnect(sde.User, UserDisconnectReason.TimeOut);
+                    Sessions.GetSessionCount(sde.User, sessionCount => {
+                        if(sessionCount < 1)
+                            Users.Disconnect(sde.User, UserDisconnectReason.TimeOut);
+                    });
                     break;
             }
 

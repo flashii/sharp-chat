@@ -5,10 +5,9 @@ using System.Net;
 
 namespace SharpChat.Events {
     [Event(TYPE)]
-    public class SessionResumeEvent : SessionEvent {
-        public const string TYPE = PREFIX + @"resume";
+    public class SessionResumeEvent : Event {
+        public const string TYPE = @"session:resume";
 
-        public IConnection Connection { get; } // should this be carried by an event?
         public string ServerId { get; }
         public IPAddress RemoteAddress { get; }
 
@@ -16,14 +15,12 @@ namespace SharpChat.Events {
             => Connection != null;
 
         public SessionResumeEvent(ISession session, string serverId, IPAddress remoteAddress)
-            : base(session, false, null) {
+            : base(null, session.User, session, session.Connection) {
             ServerId = serverId ?? throw new ArgumentNullException(nameof(serverId));
             RemoteAddress = remoteAddress ?? throw new ArgumentNullException(nameof(remoteAddress));
         }
 
         public SessionResumeEvent(ISession session, IConnection connection, string serverId)
-            : this(session, serverId, connection.RemoteAddress) {
-            Connection = connection ?? throw new ArgumentNullException(nameof(connection));
-        }
+            : this(session, serverId, connection.RemoteAddress) { }
     }
 }

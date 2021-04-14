@@ -90,29 +90,11 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
                                     }
 
                                     IChannel chan = Channels.DefaultChannel;
+                                    ctx.Connection.LastChannel = chan;
+                                    ctx.Connection.SendPacket(new AuthSuccessPacket(user, chan, session, Messages.TextMaxLength));
 
-                                    ChannelUsers.HasUser(chan, user, hasUser => {
-                                        bool shouldJoin = !hasUser;
-
-                                        if(shouldJoin) {
-                                            // ChannelUsers?
-                                            //chan.SendPacket(new UserConnectPacket(DateTimeOffset.Now, user));
-                                            //ctx.Chat.DispatchEvent(this, new UserConnectEvent(chan, user));
-                                        }
-
-                                        ctx.Connection.SendPacket(new AuthSuccessPacket(user, chan, session, Messages.TextMaxLength));
-                                        ChannelUsers.GetUsers(chan, u => ctx.Connection.SendPacket(new ContextUsersPacket(u.Except(new[] { user }).OrderByDescending(u => u.Rank))));
-
-                                        Messages.GetMessages(chan, m => {
-                                            foreach(IMessage msg in m)
-                                                ctx.Connection.SendPacket(new ContextMessagePacket(msg));
-                                        });
-
-                                        Channels.GetChannels(user.Rank, c => ctx.Connection.SendPacket(new ContextChannelsPacket(c)));
-
-                                        if(shouldJoin)
-                                            ChannelUsers.JoinChannel(chan, session);
-                                    });
+                                    Channels.GetChannels(user.Rank, c => ctx.Connection.SendPacket(new ContextChannelsPacket(c)));
+                                    ChannelUsers.JoinChannel(chan, ctx.Session);
                                 });
                             });
                         });

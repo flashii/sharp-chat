@@ -50,7 +50,7 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
 
             string channelName = ctx.Args.ElementAtOrDefault(3)?.ToLowerInvariant();
             if(string.IsNullOrWhiteSpace(channelName))
-                ChannelContinue(ctx, Channels.DefaultChannel, text); // this should grab from the user, not the context wtf
+                ChannelContinue(ctx, ctx.Connection.LastChannel, text); // this should grab from the user, not the context wtf
             else
                 Channels.GetChannel(channelName, channel => ChannelContinue(ctx, channel, text)); // this also doesn't check if we're actually in the channel
         }
@@ -62,9 +62,8 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
             )
                 return;
 
-            // this should probably check session rather than user
-            ChannelUsers.HasUser(channel, ctx.User, hasUser => {
-                if(hasUser)
+            ChannelUsers.HasSession(channel, ctx.Session, hasSession => {
+                if(!hasSession)
                     return;
 
                 if(ctx.User.Status != UserStatus.Online) {

@@ -2,10 +2,10 @@
 
 namespace SharpChat.Events {
     [Event(TYPE)]
-    public class SessionPingEvent : SessionEvent {
-        public const string TYPE = PREFIX + @"ping";
+    public class SessionPingEvent : Event {
+        public const string TYPE = @"session:ping";
 
         public SessionPingEvent(ISession session)
-            : base(session, false) { }
+            : base(null, session.User, session, session.Connection) { }
     }
 }

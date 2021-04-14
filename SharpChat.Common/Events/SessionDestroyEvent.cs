@@ -2,10 +2,10 @@
 
 namespace SharpChat.Events {
     [Event(TYPE)]
-    public class SessionDestroyEvent : SessionEvent {
-        public const string TYPE = PREFIX + @"destroy";
+    public class SessionDestroyEvent : Event {
+        public const string TYPE = @"session:destroy";
 
         public SessionDestroyEvent(ISession session)
-            : base(session, true) {}
+            : base(null, session.User, session, session.Connection) {}
     }
 }

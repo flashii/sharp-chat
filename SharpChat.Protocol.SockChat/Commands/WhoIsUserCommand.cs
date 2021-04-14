@@ -33,9 +33,10 @@ namespace SharpChat.Protocol.SockChat.Commands {
                 if(user == null)
                     throw new UserNotFoundCommandException(userName);
 
-                IEnumerable<IPAddress> addrs = Sessions.GetRemoteAddresses(user);
-                foreach(IPAddress addr in addrs)
-                    ctx.Connection.SendPacket(new WhoIsResponsePacket(Sender, user, addr));
+                Sessions.GetRemoteAddresses(user, addrs => {
+                    foreach(IPAddress addr in addrs)
+                        ctx.Connection.SendPacket(new WhoIsResponsePacket(Sender, user, addr));
+                });
             });
 
             return true;

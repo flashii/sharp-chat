@@ -4,8 +4,6 @@ using SharpChat.Users;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SharpChat.Protocol {
     public class ConnectionList<TConnection>
@@ -19,14 +17,14 @@ namespace SharpChat.Protocol {
             ChannelUsers = channelUsers ?? throw new ArgumentNullException(nameof(channelUsers));
         }
 
-        public void AddConnection(TConnection conn) {
+        public virtual void AddConnection(TConnection conn) {
             if(conn == null)
                 throw new ArgumentNullException(nameof(conn));
             lock(Sync)
                 Connections.Add(conn);
         }
 
-        public void RemoveConnection(TConnection conn) {
+        public virtual void RemoveConnection(TConnection conn) {
             if(conn == null)
                 throw new ArgumentNullException(nameof(conn));
             lock(Sync)
@@ -68,6 +66,14 @@ namespace SharpChat.Protocol {
             GetConnection(c => session.Equals(c.Session), callback);
         }
 
+        public void GetConnectionBySessionId(string sessionId, Action<TConnection> callback) {
+            if(sessionId == null)
+                throw new ArgumentNullException(nameof(sessionId));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            GetConnection(c => c.Session != null && sessionId.Equals(c.Session.SessionId), callback);
+        }
+
         public void GetConnections(Func<TConnection, bool> predicate, Action<IEnumerable<TConnection>> callback) {
             if(predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
@@ -77,7 +83,13 @@ namespace SharpChat.Protocol {
                 callback(Connections.Where(predicate));
         }
 
-        public void GetConnections(IUser user, Action<IEnumerable<TConnection>> callback) {
+        public void GetConnectionsWithSession(Action<IEnumerable<TConnection>> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            GetConnections(c => c.Session != null, callback);
+        }
+
+        public void GetOwnConnections(IUser user, Action<IEnumerable<TConnection>> callback) {
             if(user == null)
                 throw new ArgumentNullException(nameof(user));
             if(callback == null)
@@ -90,7 +102,34 @@ namespace SharpChat.Protocol {
                 throw new ArgumentNullException(nameof(channel));
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
-            //ChannelUsers.GetSessions(channel, );
+            ChannelUsers.GetLocalSessions(channel, sessions => GetConnections(sessions, callback));
+        }
+
+        public void GetConnections(IEnumerable<ISession> sessions, Action<IEnumerable<TConnection>> callback) {
+            if(sessions == null)
+                throw new ArgumentNullException(nameof(sessions));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            if(!sessions.Any()) {
+                callback(Enumerable.Empty<TConnection>());
+                return;
+            }
+            lock(Sync)
+                callback(sessions.Where(s => s.Connection is TConnection conn && Connections.Contains(conn)).Select(s => (TConnection)s.Connection));
+        }
+
+        public void GetAllConnections(IUser user, Action<IEnumerable<TConnection>> callback) {
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            ChannelUsers.GetLocalSessions(user, sessions => GetConnections(sessions, callback));
+        }
+
+        public void GetDeadConnections(Action<IEnumerable<TConnection>> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            GetConnections(c => !c.IsAvailable, callback);
         }
     }
 }

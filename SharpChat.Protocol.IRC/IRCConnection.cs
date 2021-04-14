@@ -1,5 +1,4 @@
-﻿using SharpChat.Events;
-using SharpChat.Protocol.IRC.Replies;
+﻿using SharpChat.Protocol.IRC.Replies;
 using SharpChat.Protocol.IRC.ServerCommands;
 using SharpChat.Protocol.IRC.Users;
 using SharpChat.Sessions;
@@ -39,64 +38,65 @@ namespace SharpChat.Protocol.IRC {
         }
 
         public void SendCommand(IServerCommand command) {
-            lock(Sync) {
-                StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
-                // Sender
-                sb.Append(IRCServer.PREFIX);
-                IUser sender = command.Sender;
-                if(sender != null) {
-                    sb.Append(sender.GetIRCName());
-                    sb.Append('!');
-                    sb.Append(sender.UserName);
-                    sb.Append('@');
-                }
-                sb.Append(Server.ServerHost);
-                sb.Append(' ');
-
-                // Command
-                sb.Append(command.CommandName);
-                sb.Append(' ');
-
-                // Contents
-                sb.Append(command.GetLine());
-                sb.Append(IServerCommand.CRLF);
-
-                Send(sb);
+            // Sender
+            sb.Append(IRCServer.PREFIX);
+            IUser sender = command.Sender;
+            if(sender != null) {
+                sb.Append(sender.GetIRCName());
+                sb.Append('!');
+                sb.Append(sender.UserName);
+                sb.Append('@');
             }
+            sb.Append(Server.ServerHost);
+            sb.Append(' ');
+
+            // Command
+            sb.Append(command.CommandName);
+            sb.Append(' ');
+
+            // Contents
+            sb.Append(command.GetLine());
+            sb.Append(IServerCommand.CRLF);
+
+            Send(sb);
         }
 
         public void SendReply(IReply reply) {
-            lock(Sync) {
-                StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
-                // Server
-                sb.Append(IRCServer.PREFIX);
-                sb.Append(Server.ServerHost);
-                sb.Append(' ');
+            // Server
+            sb.Append(IRCServer.PREFIX);
+            sb.Append(Server.ServerHost);
+            sb.Append(' ');
 
-                // Reply code
-                sb.AppendFormat(@"{0:000}", reply.ReplyCode);
-                sb.Append(' ');
+            // Reply code
+            sb.AppendFormat(@"{0:000}", reply.ReplyCode);
+            sb.Append(' ');
 
-                // Receiver
-                if(Session == null)
-                    sb.Append('-');
-                else
-                    sb.Append(Session.User.GetIRCName());
-                sb.Append(' ');
+            // Receiver
+            if(Session == null)
+                sb.Append('-');
+            else
+                sb.Append(Session.User.GetIRCName());
+            sb.Append(' ');
 
-                // Contents
-                sb.Append(reply.GetLine());
-                sb.Append(IReply.CRLF);
+            // Contents
+            sb.Append(reply.GetLine());
+            sb.Append(IReply.CRLF);
 
-                Send(sb);
-            }
+            Send(sb);
         }
 
-        private void Send(object obj) {
+        public int Receive(byte[] buffer) {
             lock(Sync)
-                Socket.Send(Encoding.UTF8.GetBytes(obj.ToString()));
+                return Socket.Receive(buffer);
+        }
+
+        private int Send(object obj) {
+            lock(Sync)
+                return Socket.Send(Encoding.UTF8.GetBytes(obj.ToString()));
         }
 
         public void Close() {

@@ -2,10 +2,10 @@
 
 namespace SharpChat.Events {
     [Event(TYPE)]
-    public class SessionSuspendEvent : SessionEvent {
-        public const string TYPE = PREFIX + @"suspend";
+    public class SessionSuspendEvent : Event {
+        public const string TYPE = @"session:suspend";
 
         public SessionSuspendEvent(ISession session)
-            : base(session, false, null) { }
+            : base(null, session.User, session, session.Connection) { }
     }
 }

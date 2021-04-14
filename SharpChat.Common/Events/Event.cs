@@ -1,4 +1,6 @@
 ﻿using SharpChat.Channels;
+using SharpChat.Protocol;
+using SharpChat.Sessions;
 using SharpChat.Users;
 using System;
 
@@ -8,16 +10,20 @@ namespace SharpChat.Events {
         public DateTimeOffset DateTime { get; }
         public IUser User { get; }
         public IChannel Channel { get; }
+        public ISession Session { get; }
+        public IConnection Connection { get; }
 
-        public Event(IChannel channel, IUser user, DateTimeOffset? dateTime = null) {
+        public Event(IChannel channel, IUser user, ISession session = null, IConnection conn = null, DateTimeOffset? dateTime = null) {
             EventId = SharpId.Next();
             DateTime = dateTime ?? DateTimeOffset.Now;
-            User = user; // user is allowed to be NULL for things not involving users
-            Channel = channel; // channel is allowed to be NULL for broadcasting
+            User = user;
+            Channel = channel;
+            Session = session;
+            Connection = conn;
         }
 
         public override string ToString() {
-            return $@"[{EventId}] {GetType().Name} {User} {Channel}";
+            return $@"[{EventId}] {GetType().Name} {User} {Channel} {Session} {Connection}";
         }
     }
 }

@@ -152,6 +152,18 @@ namespace SharpChat.Sessions {
             GetLocalSessions(s => user.Equals(s.User), callback);
         }
 
+        public void GetLocalSessions(IEnumerable<string> sessionIds, Action<IEnumerable<ISession>> callback) {
+            if(sessionIds == null)
+                throw new ArgumentNullException(nameof(sessionIds));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            if(!sessionIds.Any()) {
+                callback(Enumerable.Empty<ISession>());
+                return;
+            }
+            GetLocalSessions(s => sessionIds.Contains(s.SessionId), callback);
+        }
+
         // i wonder what i'll think about this after sleeping a night on it
         // perhaps stick active sessions with the master User implementation again transparently.
         // session startups should probably be events as well
@@ -312,14 +324,24 @@ namespace SharpChat.Sessions {
 
         public void HandleEvent(object sender, IEvent evt) {
             switch(evt) {
+                case SessionChannelSwitchEvent _:
+                case SessionPingEvent _:
+                case SessionResumeEvent _:
+                case SessionSuspendEvent _:
+                    GetSession(evt.Session, session => session?.HandleEvent(sender, evt));
+                    break;
+
+                case SessionCreatedEvent sce:
+                    // sce needs to have sufficient info the create a session
+                    break;
+
                 case SessionDestroyEvent sde:
-                    lock(Sync)
-                        Sessions.RemoveAll(s => sde.SessionId.Equals(s.SessionId));
+                    GetSession(sde.Session, session => {
+                        Sessions.Remove(session);
+                        session.HandleEvent(sender, sde);
+                    });
                     break;
             }
-
-            if(evt is SessionEvent se)
-                GetLocalSession(se.SessionId, session => session?.HandleEvent(sender, se));
         }
     }
 }
