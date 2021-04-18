@@ -9,6 +9,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
         public const string NAME = @"INVITE";
 
         public string CommandName => NAME;
+        public bool RequireSession => true;
 
         private UserManager Users { get; }
         private ChannelManager Channels { get; }
@@ -35,7 +36,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
                     return;
                 }
 
-                Channels.GetChannel(channelName, channel => {
+                Channels.GetChannelByName(channelName, channel => {
                     if(channel == null) {
                         ctx.Connection.SendReply(new NoSuchChannelReply(channelName));
                         return;

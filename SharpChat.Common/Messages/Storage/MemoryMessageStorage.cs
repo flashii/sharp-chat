@@ -34,7 +34,7 @@ namespace SharpChat.Messages.Storage {
 
         private void StoreMessage(MessageCreateEvent mce) {
             lock(Sync) {
-                MemoryMessageChannel channel = Channels.FirstOrDefault(c => c.Equals(mce.ChannelName));
+                MemoryMessageChannel channel = Channels.FirstOrDefault(c => mce.ChannelId.Equals(mce.ChannelId));
                 if(channel == null)
                     return; // This is basically an invalid state
                 Messages.Add(new MemoryMessage(channel, mce));
@@ -55,15 +55,10 @@ namespace SharpChat.Messages.Storage {
             lock(Sync)
                 Channels.Add(new MemoryMessageChannel(cce));
         }
-        
-        private void UpdateChannel(object sender, ChannelUpdateEvent cue) {
-            lock(Sync)
-                Channels.FirstOrDefault(c => c.Name.Equals(cue.PreviousName))?.HandleEvent(sender, cue);
-        }
 
         private void DeleteChannel(ChannelDeleteEvent cde) {
             lock(Sync) {
-                MemoryMessageChannel channel = Channels.FirstOrDefault(c => c.Equals(cde.ChannelName));
+                MemoryMessageChannel channel = Channels.FirstOrDefault(c => cde.ChannelId.Equals(c.ChannelId));
                 if(channel == null)
                     return;
                 Channels.Remove(channel);
@@ -85,9 +80,6 @@ namespace SharpChat.Messages.Storage {
 
                 case ChannelCreateEvent cce:
                     CreateChannel(cce);
-                    break;
-                case ChannelUpdateEvent cue:
-                    UpdateChannel(sender, cue);
                     break;
                 case ChannelDeleteEvent cde:
                     DeleteChannel(cde);

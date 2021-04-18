@@ -7,9 +7,11 @@ using System.Text;
 namespace SharpChat.Protocol.SockChat.Packets {
     public class UserConnectPacket : ServerPacket {
         private UserConnectEvent Connect { get; }
+        private IUser User { get; }
 
-        public UserConnectPacket(UserConnectEvent connect) {
+        public UserConnectPacket(UserConnectEvent connect, IUser user) {
             Connect = connect ?? throw new ArgumentNullException(nameof(connect));
+            User = user ?? throw new ArgumentNullException(nameof(user));
         }
 
         protected override string DoPack() {
@@ -19,7 +21,7 @@ namespace SharpChat.Protocol.SockChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Connect.DateTime.ToUnixTimeSeconds());
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Connect.UserId.Pack());
+            sb.Append(User.Pack());
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Connect.EventId);
 

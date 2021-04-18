@@ -7,6 +7,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
         public const string NAME = @"AWAY";
 
         public string CommandName => NAME;
+        public bool RequireSession => true;
 
         private UserManager Users { get; }
 
@@ -15,9 +16,6 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
         }
 
         public void HandleCommand(ClientCommandContext ctx) {
-            if(!ctx.HasUser)
-                return;
-
             string line = ctx.Arguments.FirstOrDefault() ?? string.Empty;
             bool isAway = !string.IsNullOrEmpty(line);
 

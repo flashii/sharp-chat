@@ -32,10 +32,6 @@ namespace SharpChat.Protocol.IRC.ServerCommands {
             return Split(message.Channel, message.Sender, message.Text);
         }
 
-        public static IEnumerable<ServerPrivateMessageCommand> Split(MessageCreateEvent mce) {
-            return Split(mce.ChannelName, mce.UserId, mce.Text);
-        }
-
         public static IEnumerable<ServerPrivateMessageCommand> Split(IChannel channel, IUser sender, string text) {
             Queue<string> parts = new Queue<string>(SplitText(text));
             while(parts.TryDequeue(out string part))

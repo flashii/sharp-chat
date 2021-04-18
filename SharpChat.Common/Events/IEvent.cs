@@ -5,7 +5,7 @@ namespace SharpChat.Events {
         long EventId { get; }
         DateTimeOffset DateTime { get; }
         long UserId { get; }
-        string ChannelName { get; }
+        string ChannelId { get; }
         string SessionId { get; }
         string ConnectionId { get; }
     }

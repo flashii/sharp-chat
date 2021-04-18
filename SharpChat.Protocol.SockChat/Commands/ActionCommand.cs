@@ -18,7 +18,7 @@ namespace SharpChat.Protocol.SockChat.Commands {
             if(ctx.Args.Count() < 2)
                 return false;
 
-            Messages.Create(ctx.User, ctx.Channel, string.Join(' ', ctx.Args.Skip(1)), true);
+            Messages.Create(ctx.Session, ctx.Channel, string.Join(' ', ctx.Args.Skip(1)), true);
             return true;
         }
     }

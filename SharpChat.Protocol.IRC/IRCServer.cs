@@ -154,7 +154,7 @@ namespace SharpChat.Protocol.IRC {
         private void OnReceive(IRCConnection conn, string line) {
             // do rate limiting
 
-            string command = null;
+            string commandName = null;
             List<string> args = new List<string>();
 
             try {
@@ -169,7 +169,7 @@ namespace SharpChat.Protocol.IRC {
                 while((i < (line.Length - 1)) && line[++i] != ' ');
                 if(line.Length - 1 == i)
                     ++i;
-                command = line[commandStart..i];
+                commandName = line[commandStart..i];
 
                 int paramStart = ++i;
                 while(i < line.Length) {
@@ -194,13 +194,19 @@ namespace SharpChat.Protocol.IRC {
                 Logger.Debug($@"Invalid message: {line}");
             }
 
-            if(command == null)
+            if(commandName == null)
                 return;
 
             args.RemoveAll(string.IsNullOrWhiteSpace);
 
-            if(Commands.ContainsKey(command))
-                Commands[command].HandleCommand(new ClientCommandContext(conn, args));
+            if(Commands.TryGetValue(commandName, out IClientCommand command)) {
+                if(command.RequireSession && conn.Session == null) {
+                    conn.SendReply(new PasswordMismatchReply());
+                    return;
+                }
+
+                command.HandleCommand(new ClientCommandContext(conn, args));
+            }
         }
 
         // see comment in SockChatServer class
@@ -215,11 +221,19 @@ namespace SharpChat.Protocol.IRC {
                     break;
 
                 case MessageCreateEvent mce:
-                    Queue<ServerPrivateMessageCommand> msgs = new Queue<ServerPrivateMessageCommand>(ServerPrivateMessageCommand.Split(mce));
-                    Connections.GetConnectionsByChannelName(mce.ChannelName, conns => {
-                        while(msgs.TryDequeue(out ServerPrivateMessageCommand spmc))
-                            foreach(IRCConnection conn in conns)
-                                conn.SendCommand(spmc);
+                    Context.Channels.GetChannelById(mce.ChannelId, channel => {
+                        if(channel == null)
+                            return;
+
+                        Context.Users.GetUser(mce.UserId, user => {
+                            Queue<ServerPrivateMessageCommand> msgs = new Queue<ServerPrivateMessageCommand>(ServerPrivateMessageCommand.Split(channel, user, mce.Text));
+                            Connections.GetConnections(channel, conns => {
+                                conns = conns.Where(c => !mce.ConnectionId.Equals(c.ConnectionId));
+                                while(msgs.TryDequeue(out ServerPrivateMessageCommand spmc))
+                                    foreach(IRCConnection conn in conns)
+                                        conn.SendCommand(spmc);
+                            });
+                        });
                     });
                     break;
 
@@ -231,7 +245,7 @@ namespace SharpChat.Protocol.IRC {
 
                 // these events need revising
                 case ChannelUserJoinEvent cuje:
-                    Context.Channels.GetChannel(cuje.ChannelName, channel => {
+                    Context.Channels.GetChannelById(cuje.ChannelId, channel => {
                         if(channel == null)
                             return;
 
@@ -240,17 +254,18 @@ namespace SharpChat.Protocol.IRC {
                                 return;
 
                             ServerJoinCommand sjc = new ServerJoinCommand(channel, user);
-                            Connections.GetConnectionsByChannelName(cuje.ChannelName, conns => {
+                            Connections.GetConnections(channel, conns => {
+                                conns = conns.Where(c => !user.Equals(c.Session?.User));
                                 foreach(IRCConnection conn in conns)
                                     conn.SendCommand(sjc);
                             });
-
-                            UserJoinChannel(channel, cuje.SessionId);
                         });
+
+                        UserJoinChannel(channel, cuje.SessionId);
                     });
                     break;
                 case ChannelSessionJoinEvent csje:
-                    Context.Channels.GetChannel(csje.ChannelName, channel => {
+                    Context.Channels.GetChannelById(csje.ChannelId, channel => {
                         if(channel == null)
                             return;
 
@@ -264,7 +279,7 @@ namespace SharpChat.Protocol.IRC {
                     break;
 
                 case ChannelUserLeaveEvent cule:
-                    Context.Channels.GetChannel(cule.ChannelName, channel => {
+                    Context.Channels.GetChannelById(cule.ChannelId, channel => {
                         if(channel == null)
                             return;
 
@@ -273,7 +288,7 @@ namespace SharpChat.Protocol.IRC {
                                 return;
 
                             ServerPartCommand spc = new ServerPartCommand(channel, user, cule.Reason);
-                            Connections.GetConnectionsByChannelName(cule.ChannelName, conns => {
+                            Connections.GetConnections(channel, conns => {
                                 foreach(IRCConnection conn in conns)
                                     conn.SendCommand(spc);
                             });

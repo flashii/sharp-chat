@@ -9,11 +9,8 @@ namespace SharpChat.Events {
 
         public UserDisconnectReason Reason { get; }
 
-        public ChannelUserLeaveEvent(IChannel channel, IUser user, UserDisconnectReason reason)
-            : base(
-                  channel ?? throw new ArgumentNullException(nameof(channel)),
-                  user ?? throw new ArgumentNullException(nameof(user))
-              ) {
+        public ChannelUserLeaveEvent(IUser user, IChannel channel, UserDisconnectReason reason)
+            : base(user, channel) {
             Reason = reason;
         }
     }

@@ -19,7 +19,7 @@ namespace SharpChat.Protocol.SockChat.Commands {
         }
 
         public IServerPacket ToPacket(IUser sender) {
-            return new BotResponsePacket(sender, BotArguments.Error(ErrorCode, Arguments));
+            return new BotResponsePacket(sender.UserId, BotArguments.Error(ErrorCode, Arguments));
         }
     }
 

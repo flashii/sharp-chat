@@ -9,7 +9,7 @@ namespace SharpChat.Events {
         public UserDisconnectReason Reason { get; }
 
         public UserDisconnectEvent(IUser user, UserDisconnectReason reason)
-            : base(null, user ?? throw new ArgumentNullException(nameof(user))) {
+            : base(user ?? throw new ArgumentNullException(nameof(user))) {
             Reason = reason;
         }
     }

@@ -17,7 +17,7 @@ namespace SharpChat.Users {
         public string StatusMessage { get; private set; }
 
         private readonly object Sync = new object();
-        private List<string> Channels { get; } = new List<string>();
+        private HashSet<string> Channels { get; } = new HashSet<string>();
 
         public User(
             long userId,
@@ -65,7 +65,7 @@ namespace SharpChat.Users {
             if(channel == null)
                 return false;
             lock(Sync)
-                return Channels.Contains(channel.Name.ToLowerInvariant());
+                return Channels.Contains(channel.ChannelId);
         }
 
         public void GetChannels(Action<IEnumerable<string>> callback) {
@@ -79,27 +79,27 @@ namespace SharpChat.Users {
             lock(Sync) {
                 switch(evt) {
                     case ChannelUserJoinEvent cje:
-                        Channels.Add(evt.ChannelName.Name);
+                        Channels.Add(evt.ChannelId);
                         break;
                     case ChannelUserLeaveEvent cle:
-                        Channels.Remove(evt.ChannelName.Name);
+                        Channels.Remove(evt.ChannelId);
                         break;
 
                     case UserUpdateEvent uue:
                         if(uue.HasUserName)
-                            UserName = uue.UserName;
-                        if(uue.Colour.HasValue)
-                            Colour = uue.Colour.Value;
-                        if(uue.Rank.HasValue)
-                            Rank = uue.Rank.Value;
+                            UserName = uue.NewUserName;
+                        if(uue.NewColour.HasValue)
+                            Colour = uue.NewColour.Value;
+                        if(uue.NewRank.HasValue)
+                            Rank = uue.NewRank.Value;
                         if(uue.HasNickName)
-                            NickName = uue.NickName;
-                        if(uue.Perms.HasValue)
-                            Permissions = uue.Perms.Value;
-                        if(uue.Status.HasValue)
-                            Status = uue.Status.Value;
+                            NickName = uue.NewNickName;
+                        if(uue.NewPerms.HasValue)
+                            Permissions = uue.NewPerms.Value;
+                        if(uue.NewStatus.HasValue)
+                            Status = uue.NewStatus.Value;
                         if(uue.HasStatusMessage)
-                            StatusMessage = uue.StatusMessage;
+                            StatusMessage = uue.NewStatusMessage;
                         break;
                     case UserDisconnectEvent _:
                         Status = UserStatus.Offline;

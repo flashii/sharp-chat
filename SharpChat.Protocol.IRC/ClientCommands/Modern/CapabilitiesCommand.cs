@@ -9,6 +9,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.Modern {
         public const string NAME = @"CAP";
 
         public string CommandName => NAME;
+        public bool RequireSession => true;
 
         public void HandleCommand(ClientCommandContext args) {
             // capability shit

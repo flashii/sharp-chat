@@ -9,6 +9,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
         public const string NAME = @"MODE";
 
         public string CommandName => NAME;
+        public bool RequireSession => true;
 
         public void HandleCommand(ClientCommandContext args) {
             // sets modes on a user or a channel

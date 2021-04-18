@@ -39,7 +39,7 @@ namespace SharpChat.Messages.Storage {
             Wrapper.RunCommand(
                 @"CREATE TABLE `sqc_messages` ("
                 + @"`msg_id` " + Wrapper.BigIntType(20) + @" PRIMARY KEY,"
-                + @"`msg_channel_name` " + Wrapper.VarCharType(255) + @" NOT NULL COLLATE " + Wrapper.AsciiCollation + @","
+                + @"`msg_channel_id` " + Wrapper.VarBinaryType(255) + @" NOT NULL,"
                 + @"`msg_sender_id` " + Wrapper.BigUIntType(20) + @" NOT NULL,"
                 + @"`msg_sender_name` " + Wrapper.VarCharType(255) + @" NOT NULL COLLATE " + Wrapper.UnicodeCollation + @","
                 + @"`msg_sender_colour` " + Wrapper.IntType(11) + @" NOT NULL,"
@@ -53,7 +53,7 @@ namespace SharpChat.Messages.Storage {
                 + @"`msg_deleted` " + Wrapper.TimestampType + @" NULL DEFAULT NULL"
                 + @");"
             );
-            Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_channel_index` ON `sqc_messages` (`msg_channel_name`);");
+            Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_channel_index` ON `sqc_messages` (`msg_channel_id`);");
             Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_sender_index` ON `sqc_messages` (`msg_sender_id`);");
             Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_flags_index` ON `sqc_messages` (`msg_flags`);");
             Wrapper.RunCommand(@"CREATE INDEX `sqc_messages_created_index` ON `sqc_messages` (`msg_created`);");

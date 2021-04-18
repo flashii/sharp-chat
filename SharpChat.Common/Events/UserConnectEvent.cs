@@ -15,7 +15,7 @@ namespace SharpChat.Events {
         public string StatusMessage { get; }
 
         public UserConnectEvent(IUser user)
-            : base(null, user ?? throw new ArgumentNullException(nameof(user))) {
+            : base(user ?? throw new ArgumentNullException(nameof(user))) {
             Name = user.UserName;
             Colour = user.Colour;
             Rank = user.Rank;

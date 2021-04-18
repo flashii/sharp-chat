@@ -15,6 +15,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
         private const string WELCOME = @"welcome.txt";
 
         public string CommandName => NAME;
+        public bool RequireSession => false;
 
         private IRCServer Server { get; }
         private Context Context { get; }

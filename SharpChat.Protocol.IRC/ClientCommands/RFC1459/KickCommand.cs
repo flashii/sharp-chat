@@ -9,6 +9,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
         public const string NAME = @"KICK";
 
         public string CommandName => NAME;
+        public bool RequireSession => true;
 
         public void HandleCommand(ClientCommandContext args) {
             // kick a user from a channel

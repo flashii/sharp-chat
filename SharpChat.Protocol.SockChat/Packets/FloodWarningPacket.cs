@@ -3,6 +3,6 @@
 namespace SharpChat.Protocol.SockChat.Packets {
     public class FloodWarningPacket : BotResponsePacket {
         public FloodWarningPacket(IUser sender)
-            : base(sender, BotArguments.Notice(@"flwarn")) { }
+            : base(sender.UserId, BotArguments.Notice(@"flwarn")) { }
     }
 }

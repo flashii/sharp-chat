@@ -13,8 +13,7 @@ namespace SharpChat.Events {
         public bool AutoJoin { get; }
         public uint MaxCapacity { get; }
 
-        public ChannelCreateEvent(IChannel channel)
-            : base(null, channel.Owner) {
+        public ChannelCreateEvent(IChannel channel) : base(channel) {
             Name = channel.Name;
             Topic = channel.Topic;
             IsTemporary = channel.IsTemporary;

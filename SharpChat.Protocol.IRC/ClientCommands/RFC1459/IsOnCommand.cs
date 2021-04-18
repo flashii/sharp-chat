@@ -10,6 +10,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
         public const string NAME = @"ISON";
 
         public string CommandName => NAME;
+        public bool RequireSession => true;
 
         private UserManager Users { get; }
 

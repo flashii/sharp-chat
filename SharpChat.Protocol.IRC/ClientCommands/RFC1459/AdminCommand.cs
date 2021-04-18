@@ -6,6 +6,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
         public const string NAME = @"ADMIN";
 
         public string CommandName => NAME;
+        public bool RequireSession => true;
 
         private IRCServer Server { get; }
 

@@ -20,7 +20,7 @@ namespace SharpChat.Messages.Storage {
             IMessage msg = null;
 
             Wrapper.RunQuery(
-                @"SELECT `msg_id`, `msg_channel_name`, `msg_sender_id`, `msg_sender_name`, `msg_sender_colour`, `msg_sender_rank`, `msg_sender_nick`"
+                @"SELECT `msg_id`, `msg_channel_id`, `msg_sender_id`, `msg_sender_name`, `msg_sender_colour`, `msg_sender_rank`, `msg_sender_nick`"
                 + @", `msg_sender_perms`, `msg_text`, `msg_flags`"
                 + @", " + Wrapper.ToUnixTime(@"`msg_created`") + @" AS `msg_created`"
                 + @", " + Wrapper.ToUnixTime(@"`msg_edited`") + @" AS `msg_edited`"
@@ -42,12 +42,12 @@ namespace SharpChat.Messages.Storage {
             List<IMessage> msgs = new List<IMessage>();
 
             Wrapper.RunQuery(
-                @"SELECT `msg_id`, `msg_channel_name`, `msg_sender_id`, `msg_sender_name`, `msg_sender_colour`, `msg_sender_rank`, `msg_sender_nick`"
+                @"SELECT `msg_id`, `msg_channel_id`, `msg_sender_id`, `msg_sender_name`, `msg_sender_colour`, `msg_sender_rank`, `msg_sender_nick`"
                 + @", `msg_sender_perms`, `msg_text`, `msg_flags`"
                 + @", " + Wrapper.ToUnixTime(@"`msg_created`") + @" AS `msg_created`"
                 + @", " + Wrapper.ToUnixTime(@"`msg_edited`") + @" AS `msg_edited`"
                 + @" FROM `sqc_messages`"
-                + @" WHERE `msg_channel_name` = @channelName"
+                + @" WHERE `msg_channel_id` = @channelId"
                 + @" AND `msg_deleted` IS NULL"
                 + @" ORDER BY `msg_id` DESC"
                 + @" LIMIT @amount OFFSET @offset",
@@ -55,7 +55,7 @@ namespace SharpChat.Messages.Storage {
                     while(reader.Next())
                         msgs.Add(new ADOMessage(reader));
                 },
-                Wrapper.CreateParam(@"channelName", channel.Name),
+                Wrapper.CreateParam(@"channelId", channel.ChannelId),
                 Wrapper.CreateParam(@"amount", amount),
                 Wrapper.CreateParam(@"offset", offset)
             );
@@ -71,14 +71,14 @@ namespace SharpChat.Messages.Storage {
 
             Wrapper.RunCommand(
                 @"INSERT INTO `sqc_messages` ("
-                    + @"`msg_id`, `msg_channel_name`, `msg_sender_id`, `msg_sender_name`, `msg_sender_colour`, `msg_sender_rank`"
+                    + @"`msg_id`, `msg_channel_id`, `msg_sender_id`, `msg_sender_name`, `msg_sender_colour`, `msg_sender_rank`"
                     + @", `msg_sender_nick`, `msg_sender_perms`, `msg_text`, `msg_flags`, `msg_created`"
                 + @") VALUES ("
-                    + @"@id, @channelName, @senderId, @senderName, @senderColour, @senderRank, @senderNick, @senderPerms"
+                    + @"@id, @channelId, @senderId, @senderName, @senderColour, @senderRank, @senderNick, @senderPerms"
                     + @", @text, @flags, " + Wrapper.FromUnixTime(@"@created")
                 + @");",
                 Wrapper.CreateParam(@"id", mce.MessageId),
-                Wrapper.CreateParam(@"channelName", mce.ChannelName),
+                Wrapper.CreateParam(@"channelId", mce.ChannelId),
                 Wrapper.CreateParam(@"senderId", mce.UserId),
                 Wrapper.CreateParam(@"senderName", mce.UserName),
                 Wrapper.CreateParam(@"senderColour", mce.UserColour.Raw),
@@ -108,22 +108,11 @@ namespace SharpChat.Messages.Storage {
             );
         }
 
-        private void UpdateChannel(ChannelUpdateEvent cue) {
-            if(!cue.HasName)
-                return;
-
-            Wrapper.RunCommand(
-                @"UPDATE `sqc_messages` SET `msg_channel_name` = @newName WHERE `msg_channel_name` = @oldName",
-                Wrapper.CreateParam(@"newName", cue.Name),
-                Wrapper.CreateParam(@"oldName", cue.PreviousName)
-            );
-        }
-
         private void DeleteChannel(ChannelDeleteEvent cde) {
             Wrapper.RunCommand(
-                @"UPDATE `sqc_messages` SET `msg_deleted` = " + Wrapper.FromUnixTime(@"@deleted") + @" WHERE `msg_channel_name` = @name AND `msg_deleted` IS NULL",
+                @"UPDATE `sqc_messages` SET `msg_deleted` = " + Wrapper.FromUnixTime(@"@deleted") + @" WHERE `msg_channel_id` = @channelId AND `msg_deleted` IS NULL",
                 Wrapper.CreateParam(@"deleted", cde.DateTime.ToUnixTimeSeconds()),
-                Wrapper.CreateParam(@"name", cde.ChannelName)
+                Wrapper.CreateParam(@"channelId", cde.ChannelId)
             );
         }
 
@@ -139,9 +128,6 @@ namespace SharpChat.Messages.Storage {
                     DeleteMessage(mde);
                     break;
 
-                case ChannelUpdateEvent cue:
-                    UpdateChannel(cue);
-                    break;
                 case ChannelDeleteEvent cde:
                     DeleteChannel(cde);
                     break;

@@ -1,5 +1,6 @@
 ﻿using SharpChat.Events;
 using SharpChat.Protocol.SockChat.Users;
+using SharpChat.Users;
 using System;
 using System.Text;
 
@@ -7,8 +8,11 @@ namespace SharpChat.Protocol.SockChat.Packets {
     public class ChannelJoinPacket : ServerPacket {
         private ChannelUserJoinEvent Join { get; }
 
-        public ChannelJoinPacket(ChannelUserJoinEvent join) {
+        private IUser User { get; }
+
+        public ChannelJoinPacket(ChannelUserJoinEvent join, IUser user) {
             Join = join ?? throw new ArgumentNullException(nameof(join));
+            User = user ?? throw new ArgumentNullException(nameof(user));
         }
 
         protected override string DoPack() {
@@ -18,11 +22,11 @@ namespace SharpChat.Protocol.SockChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append((int)ServerMoveSubPacketId.UserJoined);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Join.UserId.UserId);
+            sb.Append(User.UserId);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Join.UserId.GetDisplayName());
+            sb.Append(User.GetDisplayName());
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Join.UserId.Colour);
+            sb.Append(User.Colour);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Join.EventId);
 

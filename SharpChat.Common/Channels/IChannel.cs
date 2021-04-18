@@ -2,6 +2,7 @@
 
 namespace SharpChat.Channels {
     public interface IChannel : IEquatable<IChannel> {
+        string ChannelId { get; }
         string Name { get; }
         string Topic { get; }
         bool IsTemporary { get; }

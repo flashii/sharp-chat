@@ -244,7 +244,7 @@ namespace SharpChat.Sessions {
                 throw new ArgumentNullException(nameof(session));
 
             lock(Sync)
-                Dispatcher.DispatchEvent(this, new SessionChannelSwitchEvent(session, channel));
+                Dispatcher.DispatchEvent(this, new SessionChannelSwitchEvent(channel, session));
         }
 
         public void Destroy(IConnection conn) {

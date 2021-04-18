@@ -14,7 +14,7 @@ namespace SharpChat.Events {
             => !string.IsNullOrEmpty(Text);
 
         public MessageUpdateEvent(IMessage message, IUser editor, string text)
-            : base(message.Channel, editor) {
+            : base(editor, message.Channel) {
             MessageId = message.MessageId;
             Text = text ?? throw new ArgumentNullException(nameof(text));
         }

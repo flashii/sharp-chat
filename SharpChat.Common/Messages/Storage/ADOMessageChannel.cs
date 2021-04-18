@@ -1,11 +1,11 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Database;
-using SharpChat.Users;
 using System;
 
 namespace SharpChat.Messages.Storage {
     public class ADOMessageChannel : IChannel {
-        public string Name { get; }
+        public string ChannelId { get; }
+        public string Name => string.Empty;
         public string Topic => string.Empty;
         public bool IsTemporary => true;
         public int MinimumRank => 0;
@@ -18,13 +18,13 @@ namespace SharpChat.Messages.Storage {
         public ADOMessageChannel(IDatabaseReader reader) {
             if(reader == null)
                 throw new ArgumentNullException(nameof(reader));
-            Name = reader.ReadString(@"msg_channel_name");
+            ChannelId = reader.ReadString(@"msg_channel_id");
         }
 
         public bool Equals(IChannel other)
-            => other != null && Name.Equals(other.Name, StringComparison.InvariantCultureIgnoreCase);
+            => other != null && ChannelId.Equals(other.ChannelId);
 
         public override string ToString()
-            => $@"<ADOMessageChannel {Name}>";
+            => $@"<ADOMessageChannel {ChannelId}>";
     }
 }

@@ -22,7 +22,7 @@ namespace SharpChat.Events {
 
         public ChannelUpdateEvent(
             IChannel channel,
-            IUser user,
+            IUser owner,
             string name = null,
             string topic = null,
             bool? temp = null,
@@ -30,7 +30,7 @@ namespace SharpChat.Events {
             string password = null,
             bool? autoJoin = null,
             uint? maxCapacity = null
-        ) : base(channel ?? throw new ArgumentNullException(nameof(channel)), user) {
+        ) : base(owner, channel ?? throw new ArgumentNullException(nameof(channel))) {
             PreviousName = channel.Name;
             Name = name;
             Topic = topic;

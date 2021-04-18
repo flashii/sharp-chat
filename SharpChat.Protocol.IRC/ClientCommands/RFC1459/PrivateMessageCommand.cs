@@ -10,6 +10,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
         public const string NAME = @"PRIVMSG";
 
         public string CommandName => NAME;
+        public bool RequireSession => true;
 
         private ChannelManager Channels { get; }
         private ChannelUserRelations ChannelUsers { get; }
@@ -22,9 +23,6 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
         }
 
         public void HandleCommand(ClientCommandContext ctx) {
-            if(!ctx.HasUser)
-                return;
-
             string channelName = ctx.Arguments.ElementAtOrDefault(0);
             if(string.IsNullOrWhiteSpace(channelName)) {
                 ctx.Connection.SendReply(new NoRecipientReply(NAME));
@@ -60,7 +58,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
                         return;
                     }
 
-                    Messages.Create(ctx.User, channel, text);
+                    Messages.Create(ctx.Session, channel, text);
                 });
             });
         }

@@ -52,7 +52,7 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
             if(string.IsNullOrWhiteSpace(channelName))
                 ChannelContinue(ctx, ctx.Connection.LastChannel, text); // this should grab from the user, not the context wtf
             else
-                Channels.GetChannel(channelName, channel => ChannelContinue(ctx, channel, text)); // this also doesn't check if we're actually in the channel
+                Channels.GetChannelByName(channelName, channel => ChannelContinue(ctx, channel, text)); // this also doesn't check if we're actually in the channel
         }
 
         private void ChannelContinue(PacketHandlerContext ctx, IChannel channel, string text) {
@@ -94,18 +94,16 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
                     }
 
                 if(!handled)
-                    Messages.Create(ctx.User, channel, text);
+                    Messages.Create(ctx.Session, channel, text);
             });
         }
 
         public bool HandleCommand(string message, IUser user, IChannel channel, ISession session, SockChatConnection connection) {
             string[] parts = message[1..].Split(' ');
-            string commandName = parts[0].Replace(@".", string.Empty).ToLowerInvariant();
+            string commandName = parts[0].CleanCommandName();
 
             for(int i = 1; i < parts.Length; i++)
-                parts[i] = parts[i].Replace(@"<", @"&lt;")
-                                   .Replace(@">", @"&gt;")
-                                   .Replace("\n", @" <br/> ");
+                parts[i] = parts[i].CleanTextForCommand();
 
             ICommand command = Commands.FirstOrDefault(x => x.IsCommandMatch(commandName, parts));
             if(command == null)

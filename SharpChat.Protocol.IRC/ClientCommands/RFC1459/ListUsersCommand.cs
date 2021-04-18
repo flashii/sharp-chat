@@ -9,6 +9,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
         public const string NAME = @"LUSERS";
 
         public string CommandName => NAME;
+        public bool RequireSession => true;
 
         public void HandleCommand(ClientCommandContext args) {
             // returns server user stats

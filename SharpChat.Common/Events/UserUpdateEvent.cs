@@ -6,17 +6,30 @@ namespace SharpChat.Events {
     public class UserUpdateEvent : Event {
         public const string TYPE = @"user:update";
 
-        public string UserName { get; }
-        public Colour? Colour { get; }
-        public int? Rank { get; }
-        public string NickName { get; }
-        public UserPermissions? Perms { get; }
-        public UserStatus? Status { get; }
-        public string StatusMessage { get; }
+        public string OldUserName { get; }
+        public string NewUserName { get; }
 
-        public bool HasUserName => UserName != null;
-        public bool HasNickName => NickName != null;
-        public bool HasStatusMessage => StatusMessage != null;
+        public Colour OldColour { get; }
+        public Colour? NewColour { get; }
+
+        public int? OldRank { get; }
+        public int? NewRank { get; }
+
+        public string OldNickName { get; }
+        public string NewNickName { get; }
+
+        public UserPermissions OldPerms { get; }
+        public UserPermissions? NewPerms { get; }
+
+        public UserStatus OldStatus { get; }
+        public UserStatus? NewStatus { get; }
+
+        public string OldStatusMessage { get; }
+        public string NewStatusMessage { get; }
+
+        public bool HasUserName => NewUserName != null;
+        public bool HasNickName => NewNickName != null;
+        public bool HasStatusMessage => NewStatusMessage != null;
 
         public UserUpdateEvent(
             IUser user,
@@ -27,26 +40,46 @@ namespace SharpChat.Events {
             UserPermissions? perms = null,
             UserStatus? status = null,
             string statusMessage = null
-        ) : base(null, user ?? throw new ArgumentNullException(nameof(user))) {
-            UserName = userName;
-            Colour = colour;
-            Rank = rank;
-            NickName = nickName;
-            Perms = perms;
-            Status = status;
-            StatusMessage = statusMessage;
+        ) : base(user ?? throw new ArgumentNullException(nameof(user))) {
+            OldUserName = user.UserName;
+            if(!OldUserName.Equals(userName))
+                NewUserName = userName;
+
+            OldColour = user.Colour;
+            if(!OldColour.Equals(colour))
+                NewColour = colour;
+
+            OldRank = user.Rank;
+            if(OldRank != rank)
+                NewRank = rank;
+
+            OldNickName = user.NickName;
+            if(!OldNickName.Equals(nickName))
+                NewNickName = nickName;
+
+            OldPerms = user.Permissions;
+            if(OldPerms != perms)
+                NewPerms = perms;
+
+            OldStatus = user.Status;
+            if(OldStatus != status)
+                NewStatus = status;
+
+            OldStatusMessage = user.StatusMessage;
+            if(!OldStatusMessage.Equals(statusMessage))
+                NewStatusMessage = statusMessage;
         }
 
         public UserUpdateEvent(IUser user, UserUpdateEvent uue)
             : this(
                   user,
-                  uue.UserName,
-                  uue.Colour,
-                  uue.Rank,
-                  uue.NickName,
-                  uue.Perms,
-                  uue.Status,
-                  uue.StatusMessage
+                  uue.NewUserName,
+                  uue.NewColour,
+                  uue.NewRank,
+                  uue.NewNickName,
+                  uue.NewPerms,
+                  uue.NewStatus,
+                  uue.NewStatusMessage
               ) { }
     }
 }

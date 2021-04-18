@@ -9,6 +9,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.Modern {
         public const string NAME = @"SILENCE";
 
         public string CommandName => NAME;
+        public bool RequireSession => true;
 
         public void HandleCommand(ClientCommandContext args) {
             // (un)silence people

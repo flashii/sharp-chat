@@ -9,6 +9,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
         public const string NAME = @"JOIN";
 
         public string CommandName => NAME;
+        public bool RequireSession => true;
 
         private ChannelManager Channels { get; }
         private ChannelUserRelations ChannelUsers { get; }

@@ -11,7 +11,7 @@ namespace SharpChat.Events {
         public bool IsConnected { get; }
         public IPAddress RemoteAddress { get; }
 
-        public SessionCreatedEvent(ISession session) : base(null, session.User, session, session.Connection) {
+        public SessionCreatedEvent(ISession session) : base(session) {
             LastPing = session.LastPing;
             IsConnected = session.IsConnected;
             RemoteAddress = session.RemoteAddress;

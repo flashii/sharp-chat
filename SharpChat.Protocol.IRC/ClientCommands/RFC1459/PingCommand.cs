@@ -8,6 +8,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
         public const string NAME = @"PING";
 
         public string CommandName => NAME;
+        public bool RequireSession => true;
 
         private IRCServer Server { get; }
         private SessionManager Sessions { get; }
@@ -18,7 +19,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
         }
 
         public void HandleCommand(ClientCommandContext ctx) {
-            if(ctx.HasSession && ctx.Arguments.Any()) { // only process pings when we have a session
+            if(ctx.Arguments.Any()) {
                 Sessions.DoKeepAlive(ctx.Session);
                 ctx.Connection.SendCommand(new ServerPongCommand(Server, ctx.Arguments.FirstOrDefault()));
             }

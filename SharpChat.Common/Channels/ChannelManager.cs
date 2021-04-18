@@ -11,10 +11,10 @@ namespace SharpChat.Channels {
     public class ChannelInvalidNameException : ChannelException { }
 
     public class ChannelManager : IEventHandler {
-        private List<Channel> Channels { get; } = new List<Channel>();
+        private Dictionary<string, Channel> Channels { get; } = new Dictionary<string, Channel>();
 
         private IConfig Config { get; }
-        private CachedValue<string[]> ChannelNames { get; }
+        private CachedValue<string[]> ChannelIds { get; }
 
         private IEventDispatcher Dispatcher { get; }
         private ChatBot Bot { get; }
@@ -24,18 +24,19 @@ namespace SharpChat.Channels {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
             Config = config ?? throw new ArgumentNullException(nameof(config));
             Bot = bot ?? throw new ArgumentNullException(nameof(bot));
-            ChannelNames = Config.ReadCached(@"channels", new[] { @"lounge" });
+            ChannelIds = Config.ReadCached(@"channels", new[] { @"lounge" });
         }
 
         public IChannel DefaultChannel { get; private set; } // does there need to be a more explicit way of assigning this?
 
         public void UpdateChannels() {
             lock(Sync) {
-                string[] channelNames = ChannelNames;
+                string[] channelIds = ChannelIds.Value.Clone() as string[];
 
-                foreach(IChannel channel in Channels) {
-                    if(channelNames.Contains(channel.Name)) {
-                        using IConfig config = Config.ScopeTo($@"channels:{channel.Name}");
+                foreach(IChannel channel in Channels.Values) {
+                    if(channelIds.Contains(channel.ChannelId)) {
+                        using IConfig config = Config.ScopeTo($@"channels:{channel.ChannelId}");
+                        string name = config.ReadValue(@"name", channel.ChannelId);
                         string topic = config.ReadValue(@"topic");
                         bool autoJoin = config.ReadValue(@"autoJoin", DefaultChannel == null || DefaultChannel == channel);
                         string password = null;
@@ -51,17 +52,18 @@ namespace SharpChat.Channels {
                             maxCapacity = config.SafeReadValue(@"maxCapacity", 0u);
                         }
 
-                        Update(channel, null, topic, false, minRank, password, autoJoin, maxCapacity);
+                        Update(channel, name, topic, false, minRank, password, autoJoin, maxCapacity);
                     } else if(!channel.IsTemporary) // Not in config == temporary
                         Update(channel, temporary: true);
                 }
 
-                foreach(string channelName in channelNames) {
-                    if(Channels.Any(x => x.Name == channelName))
+                foreach(string channelId in channelIds) {
+                    if(Channels.ContainsKey(channelId))
                         continue;
-                    using IConfig config = Config.ScopeTo($@"channels:{channelName}");
+                    using IConfig config = Config.ScopeTo($@"channels:{channelId}");
+                    string name = config.ReadValue(@"name", channelId);
                     string topic = config.ReadValue(@"topic");
-                    bool autoJoin = config.ReadValue(@"autoJoin", DefaultChannel == null || DefaultChannel.Name == channelName);
+                    bool autoJoin = config.ReadValue(@"autoJoin", DefaultChannel == null || channelId.Equals(DefaultChannel.ChannelId));
                     string password = null;
                     int minRank = 0;
                     uint maxCapacity = 0;
@@ -75,11 +77,11 @@ namespace SharpChat.Channels {
                         maxCapacity = config.SafeReadValue(@"maxCapacity", 0u);
                     }
 
-                    Create(Bot.UserId, channelName, topic, false, minRank, password, autoJoin, maxCapacity);
+                    Create(channelId, Bot.UserId, name, topic, false, minRank, password, autoJoin, maxCapacity);
                 }
 
-                if(DefaultChannel == null || DefaultChannel.IsTemporary || !channelNames.Contains(DefaultChannel.Name))
-                    DefaultChannel = Channels.FirstOrDefault(c => !c.IsTemporary && c.AutoJoin);
+                if(DefaultChannel == null || DefaultChannel.IsTemporary || !channelIds.Contains(DefaultChannel.Name))
+                    DefaultChannel = Channels.Values.FirstOrDefault(c => !c.IsTemporary && c.AutoJoin);
             }
         }
 
@@ -90,20 +92,20 @@ namespace SharpChat.Channels {
                 return; // exception?
 
             lock(Sync) {
-                Channel chan;
-                if(channel is Channel c && Channels.Contains(c))
+                Channel chan = null;
+                if(channel is Channel c && Channels.ContainsValue(c))
                     chan = c;
-                else
-                    chan = Channels.FirstOrDefault(c => c.Equals(channel));
+                else if(Channels.TryGetValue(channel.ChannelId, out Channel c2))
+                    chan = c2;
 
                 if(chan == null)
                     return; // exception?
 
                 // Remove channel from the listing
-                Channels.Remove(chan);
+                Channels.Remove(chan.ChannelId);
 
                 // Broadcast death
-                Dispatcher.DispatchEvent(this, new ChannelDeleteEvent(chan, user ?? Bot));
+                Dispatcher.DispatchEvent(this, new ChannelDeleteEvent(user ?? Bot, chan));
 
                 // Move all users back to the main channel
                 // TODO:!!!!!!!!! Replace this with a kick. SCv2 supports being in 0 channels, SCv1 should force the user back to DefaultChannel.
@@ -122,7 +124,7 @@ namespace SharpChat.Channels {
             if(name == null)
                 throw new ArgumentNullException(nameof(name));
             lock(Sync)
-                return Channels.Any(c => c.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+                return Channels.Values.Any(c => c.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
         }
 
         private void ValidateName(string name) {
@@ -133,6 +135,33 @@ namespace SharpChat.Channels {
         }
 
         public IChannel Create(
+            IUser user,
+            string name,
+            string topic = null,
+            bool temp = true,
+            int minRank = 0,
+            string password = null,
+            bool autoJoin = false,
+            uint maxCapacity = 0
+        ) {
+            if(user == null)
+                throw new ArgumentNullException(nameof(user));
+            return Create(user.UserId, name, topic, temp, minRank, password, autoJoin, maxCapacity);
+        }
+
+        public IChannel Create(
+            long ownerId,
+            string name,
+            string topic = null,
+            bool temp = true,
+            int minRank = 0,
+            string password = null,
+            bool autoJoin = false,
+            uint maxCapacity = 0
+        ) => Create(RNG.NextString(Channel.ID_LENGTH), ownerId, name, topic, temp, minRank, password, autoJoin, maxCapacity);
+
+        public IChannel Create(
+            string channelId,
             long ownerId,
             string name,
             string topic = null,
@@ -147,8 +176,8 @@ namespace SharpChat.Channels {
             ValidateName(name);
 
             lock(Sync) {
-                Channel channel = new Channel(name, topic, temp, minRank, password, autoJoin, maxCapacity, ownerId);
-                Channels.Add(channel);
+                Channel channel = new Channel(channelId, name, topic, temp, minRank, password, autoJoin, maxCapacity, ownerId);
+                Channels.Add(channel.ChannelId, channel);
                 
                 // Should this remain?
                 if(DefaultChannel == null)
@@ -177,8 +206,13 @@ namespace SharpChat.Channels {
         ) {
             if(channel == null)
                 throw new ArgumentNullException(nameof(channel));
-            if(!Channels.Contains(channel))
-                throw new ArgumentException(@"Provided channel is not registered with this manager.", nameof(channel));
+
+            if(!(channel is Channel c && Channels.ContainsValue(c))) {
+                if(Channels.TryGetValue(channel.ChannelId, out Channel c2))
+                    channel = c2;
+                else
+                    throw new ArgumentException(@"Provided channel is not registered with this manager.", nameof(channel));
+            }
 
             lock(Sync) {
                 string prevName = channel.Name;
@@ -218,32 +252,38 @@ namespace SharpChat.Channels {
             }
         }
 
-        [Obsolete(@"Use void GetChannel(IChannel channel, Action<IChannel> callback)")]
-        public IChannel GetChannel(IChannel channel) {
-            if(channel == null)
-                throw new ArgumentNullException(nameof(channel));
-            lock(Sync) {
-                if(channel is Channel c && Channels.Contains(c))
-                    return c;
-                return Channels.FirstOrDefault(c => c.Equals(channel));
-            }
-        }
-
         public void GetChannel(Func<IChannel, bool> predicate, Action<IChannel> callback) {
             if(predicate == null)
                 throw new ArgumentNullException(nameof(predicate));
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
             lock(Sync)
-                callback(Channels.FirstOrDefault(predicate));
+                callback(Channels.Values.FirstOrDefault(predicate));
         }
 
-        public void GetChannel(string name, Action<IChannel> callback) {
+        public void GetChannelById(string channelId, Action<IChannel> callback) {
+            if(channelId == null)
+                throw new ArgumentNullException(nameof(channelId));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            if(string.IsNullOrWhiteSpace(channelId)) {
+                callback(null);
+                return;
+            }
+            lock(Sync)
+                callback(Channels.TryGetValue(channelId, out Channel channel) ? channel : null);
+        }
+
+        public void GetChannelByName(string name, Action<IChannel> callback) {
             if(name == null)
                 throw new ArgumentNullException(nameof(name));
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
-            GetChannel(c => c.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase), callback);
+            if(string.IsNullOrWhiteSpace(name)) {
+                callback(null);
+                return;
+            }
+            GetChannel(c => name.Equals(c.Name, StringComparison.InvariantCultureIgnoreCase), callback);
         }
 
         public void GetChannel(IChannel channel, Action<IChannel> callback) {
@@ -252,7 +292,7 @@ namespace SharpChat.Channels {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
             lock(Sync) {
-                if(channel is Channel c && Channels.Contains(c)) {
+                if(channel is Channel c && Channels.ContainsValue(c)) {
                     callback(c);
                     return;
                 }
@@ -265,7 +305,7 @@ namespace SharpChat.Channels {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
             lock(Sync)
-                callback(Channels);
+                callback(Channels.Values);
         }
 
         public void GetChannels(Func<IChannel, bool> predicate, Action<IEnumerable<IChannel>> callback) {
@@ -274,10 +314,18 @@ namespace SharpChat.Channels {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
             lock(Sync)
-                callback(Channels.Where(predicate));
+                callback(Channels.Values.Where(predicate));
         }
 
-        public void GetChannels(IEnumerable<string> names, Action<IEnumerable<IChannel>> callback) {
+        public void GetChannelsById(IEnumerable<string> channelIds, Action<IEnumerable<IChannel>> callback) {
+            if(channelIds == null)
+                throw new ArgumentNullException(nameof(channelIds));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            GetChannels(c => channelIds.Contains(c.ChannelId), callback);
+        }
+
+        public void GetChannelsByName(IEnumerable<string> names, Action<IEnumerable<IChannel>> callback) {
             if(names == null)
                 throw new ArgumentNullException(nameof(names));
             if(callback == null)
@@ -338,7 +386,8 @@ namespace SharpChat.Channels {
                 if(Exists(cce.Name))
                     throw new ArgumentException(@"Channel already registered??????", nameof(cce));
 
-                Channels.Add(new Channel(
+                Channels.Add(cce.ChannelId, new Channel(
+                    cce.ChannelId,
                     cce.Name,
                     cce.Topic,
                     cce.IsTemporary,
@@ -355,19 +404,16 @@ namespace SharpChat.Channels {
             if(sender == this)
                 return;
 
-            lock(Sync) {
-                Channel channel = Channels.FirstOrDefault(c => c.Equals(cde.ChannelName));
-                if(channel != null)
-                    Channels.Remove(channel);
-            }
+            lock(Sync)
+                Channels.Remove(cde.ChannelId);
         }
 
         private void OnEvent(object sender, IEvent evt) {
-            lock(Sync) {
-                Channel channel = Channels.FirstOrDefault(c => c.Equals(evt.ChannelName));
-                if(channel != null)
-                    channel.HandleEvent(sender, evt);
-            }
+            Channel channel;
+            lock(Sync)
+                if(!Channels.TryGetValue(evt.ChannelId, out channel))
+                    channel = null;
+            channel?.HandleEvent(sender, evt);
         }
 
         public void HandleEvent(object sender, IEvent evt) {

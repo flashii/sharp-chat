@@ -1,4 +1,5 @@
-﻿using SharpChat.Protocol.SockChat.Packets;
+﻿using SharpChat.Events;
+using SharpChat.Protocol.SockChat.Packets;
 using SharpChat.Users;
 using System;
 using System.Text;
@@ -19,6 +20,22 @@ namespace SharpChat.Protocol.SockChat.Users {
             else {
                 sb.Append('~');
                 sb.Append(user.NickName);
+            }
+
+            return sb.ToString();
+        }
+
+        public static string GetDisplayName(this UserUpdateEvent uue) {
+            StringBuilder sb = new StringBuilder();
+
+            if((uue.NewStatus ?? uue.OldStatus) == UserStatus.Away)
+                sb.Append((uue.NewStatusMessage ?? uue.OldStatusMessage).ToAFKString());
+
+            if(string.IsNullOrWhiteSpace(uue.NewNickName ?? uue.OldNickName))
+                sb.Append(uue.NewUserName ?? uue.OldUserName);
+            else {
+                sb.Append('~');
+                sb.Append(uue.NewNickName ?? uue.OldNickName);
             }
 
             return sb.ToString();

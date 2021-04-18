@@ -16,7 +16,7 @@ namespace SharpChat.Protocol.IRC.Users {
                     sb.Append('&');
                 else if(user.Rank >= 5) // mods
                     sb.Append('@');
-                else if(user.Equals(channel.Owner)) // channel owner
+                else if(user.UserId == channel.OwnerId) // channel owner
                     sb.Append('%');
                 else if(user.Can(UserPermissions.SetOwnNickname)) // tenshi
                     sb.Append('+');

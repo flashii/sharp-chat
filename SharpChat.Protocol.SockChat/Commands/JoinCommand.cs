@@ -27,7 +27,7 @@ namespace SharpChat.Protocol.SockChat.Commands {
             if(string.IsNullOrWhiteSpace(channelName))
                 return false;
 
-            Channels.GetChannel(channelName, channel => {
+            Channels.GetChannelByName(channelName, channel => {
                 // the original server sends ForceChannel before sending the error message, but this order probably makes more sense.
                 // NEW: REVERT THIS ^^^^ WHEN CONVERTING BACK TO NOT EXCEPTIONS
                 // EXCEPTIONS ARE HEAVY, DON'T USE THEM FOR USER ERRORS YOU IDIOT
@@ -45,7 +45,7 @@ namespace SharpChat.Protocol.SockChat.Commands {
 
                     string password = string.Join(' ', ctx.Args.Skip(2));
 
-                    if(!ctx.User.Can(UserPermissions.JoinAnyChannel) && channel.Owner != ctx.User) {
+                    if(!ctx.User.Can(UserPermissions.JoinAnyChannel) && channel.OwnerId != ctx.User.UserId) {
                         if(channel.MinimumRank > ctx.User.Rank) {
                             Sessions.SwitchChannel(ctx.Session);
                             throw new ChannelRankCommandException(channel);

@@ -7,9 +7,11 @@ using System.Text;
 namespace SharpChat.Protocol.SockChat.Packets {
     public class UserDisconnectPacket : ServerPacket {
         private UserDisconnectEvent Disconnect { get; }
+        private IUser User { get; }
 
-        public UserDisconnectPacket(UserDisconnectEvent disconnect) {
+        public UserDisconnectPacket(UserDisconnectEvent disconnect, IUser user) {
             Disconnect = disconnect ?? throw new ArgumentNullException(nameof(disconnect));
+            User = user ?? throw new ArgumentNullException(nameof(user));
         }
 
         protected override string DoPack() {
@@ -17,9 +19,9 @@ namespace SharpChat.Protocol.SockChat.Packets {
 
             sb.Append((int)ServerPacketId.UserDisconnect);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Disconnect.UserId.UserId);
+            sb.Append(User.UserId);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Disconnect.UserId.GetDisplayName());
+            sb.Append(User.GetDisplayName());
             sb.Append(IServerPacket.SEPARATOR);
 
             switch(Disconnect.Reason) {

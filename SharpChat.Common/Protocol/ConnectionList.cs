@@ -101,6 +101,14 @@ namespace SharpChat.Protocol {
             GetConnections(c => c.Session != null && user.Equals(c.Session.User), callback);
         }
 
+        public void GetConnectionsByChannelId(string channelId, Action<IEnumerable<TConnection>> callback) {
+            if(channelId == null)
+                throw new ArgumentNullException(nameof(channelId));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            ChannelUsers.GetLocalSessionsByChannelId(channelId, sessions => GetConnections(sessions, callback));
+        }
+
         public void GetConnectionsByChannelName(string channelName, Action<IEnumerable<TConnection>> callback) {
             if(channelName == null)
                 throw new ArgumentNullException(nameof(channelName));

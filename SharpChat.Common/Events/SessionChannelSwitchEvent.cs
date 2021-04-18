@@ -6,7 +6,7 @@ namespace SharpChat.Events {
     public class SessionChannelSwitchEvent : Event {
         public const string TYPE = @"session:channel:switch";
 
-        public SessionChannelSwitchEvent(ISession session, IChannel channel)
-            : base(channel, session.User, session, session.Connection) { }
+        public SessionChannelSwitchEvent(IChannel channel, ISession session)
+            : base(channel, session) { }
     }
 }

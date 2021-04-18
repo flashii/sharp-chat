@@ -7,6 +7,9 @@ using System.Linq;
 
 namespace SharpChat.Channels {
     public class Channel : IChannel, IEventHandler {
+        public const int ID_LENGTH = 8;
+
+        public string ChannelId { get; }
         public string Name { get; private set; }
         public string Topic { get; private set; }
         public bool IsTemporary { get; private set; }
@@ -27,6 +30,7 @@ namespace SharpChat.Channels {
             => !string.IsNullOrWhiteSpace(Password);
 
         public Channel(
+            string channelId,
             string name,
             string topic = null,
             bool temp = false,
@@ -36,7 +40,8 @@ namespace SharpChat.Channels {
             uint maxCapacity = 0,
             long ownerId = -1
         ) {
-            Name = name;
+            ChannelId = channelId ?? throw new ArgumentNullException(nameof(channelId));
+            Name = name ?? throw new ArgumentNullException(nameof(name));
             Topic = topic;
             IsTemporary = temp;
             MinimumRank = minimumRank;
@@ -141,9 +146,9 @@ namespace SharpChat.Channels {
         }
 
         public bool Equals(IChannel other)
-            => other != null && Name.Equals(other.Name, StringComparison.InvariantCultureIgnoreCase);
+            => other != null && ChannelId.Equals(other.ChannelId);
 
         public override string ToString()
-            => $@"<Channel {Name}>";
+            => $@"<Channel {ChannelId}#{Name}>";
     }
 }

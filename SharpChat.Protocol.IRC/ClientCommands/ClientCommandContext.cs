@@ -11,9 +11,6 @@ namespace SharpChat.Protocol.IRC.ClientCommands {
         public ISession Session => Connection.Session;
         public IUser User => Session.User;
 
-        public bool HasSession => Session != null;
-        public bool HasUser => HasSession;
-
         public ClientCommandContext(IRCConnection connection, IEnumerable<string> args) {
             Connection = connection ?? throw new ArgumentNullException(nameof(connection));
             Arguments = args ?? throw new ArgumentNullException(nameof(args));

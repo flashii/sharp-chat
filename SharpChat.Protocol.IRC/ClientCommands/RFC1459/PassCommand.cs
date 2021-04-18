@@ -6,6 +6,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
         public const string NAME = @"PASS";
 
         public string CommandName => NAME;
+        public bool RequireSession => false;
 
         public void HandleCommand(ClientCommandContext ctx) {
             if(ctx.Connection.HasAuthenticated) {

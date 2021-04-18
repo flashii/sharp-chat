@@ -24,11 +24,11 @@ namespace SharpChat.Protocol.SockChat.Commands {
             if(string.IsNullOrWhiteSpace(channelName))
                 throw new CommandFormatException();
 
-            Channels.GetChannel(channelName, channel => {
+            Channels.GetChannelByName(channelName, channel => {
                 if(channel == null)
                     throw new ChannelNotFoundCommandException(channelName);
 
-                if(!ctx.User.Can(UserPermissions.DeleteChannel) && channel.Owner != ctx.User)
+                if(!ctx.User.Can(UserPermissions.DeleteChannel) && channel.OwnerId != ctx.User.UserId)
                     throw new ChannelDeletionCommandException(channel.Name);
 
                 Channels.Remove(channel);

@@ -6,6 +6,6 @@ namespace SharpChat.Events {
         public const string TYPE = @"session:ping";
 
         public SessionPingEvent(ISession session)
-            : base(null, session.User, session, session.Connection) { }
+            : base(session) { }
     }
 }

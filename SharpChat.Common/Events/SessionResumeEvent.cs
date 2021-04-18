@@ -15,12 +15,15 @@ namespace SharpChat.Events {
             => ConnectionId != null;
 
         public SessionResumeEvent(ISession session, string serverId, IPAddress remoteAddress)
-            : base(null, session.User, session, session.Connection) {
+            : base(session) {
             ServerId = serverId ?? throw new ArgumentNullException(nameof(serverId));
             RemoteAddress = remoteAddress ?? throw new ArgumentNullException(nameof(remoteAddress));
         }
 
         public SessionResumeEvent(ISession session, IConnection connection, string serverId)
-            : this(session, serverId, connection.RemoteAddress) { }
+            : base(session, connection) {
+            ServerId = serverId ?? throw new ArgumentNullException(nameof(serverId));
+            RemoteAddress = connection?.RemoteAddress ?? throw new ArgumentNullException(nameof(connection));
+        }
     }
 }

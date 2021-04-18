@@ -25,7 +25,12 @@ namespace SharpChat.Messages {
             TextMaxLengthValue = Config.ReadCached(@"maxLength", DEFAULT_LENGTH_MAX);
         }
 
+        public Message Create(ISession session, IChannel channel, string text, bool isAction = false)
+            => Create(session, session.User, channel, text, isAction);
+
         public Message Create(ISession session, IUser sender, IChannel channel, string text, bool isAction = false) {
+            if(session == null)
+                throw new ArgumentNullException(nameof(session));
             if(sender == null)
                 throw new ArgumentNullException(nameof(sender));
             if(channel == null)

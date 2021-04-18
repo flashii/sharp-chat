@@ -29,7 +29,7 @@ namespace SharpChat.Protocol.SockChat.Commands {
         }
 
         private void WhoChannel(CommandContext ctx, string channelName) {
-            Channels.GetChannel(channelName, channel => {
+            Channels.GetChannelByName(channelName, channel => {
                 if(channel == null)
                     throw new ChannelNotFoundCommandException(channelName);
 

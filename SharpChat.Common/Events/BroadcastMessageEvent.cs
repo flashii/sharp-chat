@@ -8,8 +8,7 @@ namespace SharpChat.Events {
 
         public string Text { get; }
 
-        public BroadcastMessageEvent(ChatBot chatBot, string text)
-            : base(null, chatBot, null) {
+        public BroadcastMessageEvent(ChatBot chatBot, string text) : base(chatBot) {
             Text = text ?? throw new ArgumentNullException(nameof(text));
         }
     }

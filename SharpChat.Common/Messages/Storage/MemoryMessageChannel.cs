@@ -1,10 +1,10 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Events;
-using System;
 
 namespace SharpChat.Messages.Storage {
-    public class MemoryMessageChannel : IChannel, IEventHandler {
-        public string Name { get; private set; }
+    public class MemoryMessageChannel : IChannel {
+        public string ChannelId { get; }
+        public string Name => string.Empty;
         public string Topic => string.Empty;
         public bool IsTemporary => true;
         public int MinimumRank => 0;
@@ -15,22 +15,13 @@ namespace SharpChat.Messages.Storage {
         public bool HasPassword => false;
 
         public MemoryMessageChannel(IEvent evt) {
-            Name = evt.ChannelName;
+            ChannelId = evt.ChannelId;
         }
 
         public bool Equals(IChannel other)
-            => other != null && Name.Equals(other.Name, StringComparison.InvariantCultureIgnoreCase);
-
-        public void HandleEvent(object sender, IEvent evt) {
-            switch(evt) {
-                case ChannelUpdateEvent cue:
-                    if(cue.HasName)
-                        Name = cue.Name;
-                    break;
-            }
-        }
+            => other != null && ChannelId.Equals(other.ChannelId);
 
         public override string ToString()
-            => $@"<MemoryMessageChannel {Name}>";
+            => $@"<MemoryMessageChannel {ChannelId}>";
     }
 }

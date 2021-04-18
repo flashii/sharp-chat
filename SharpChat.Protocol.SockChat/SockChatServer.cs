@@ -148,8 +148,8 @@ namespace SharpChat.Protocol.SockChat {
                     Connections.GetConnectionBySessionId(scwe.SessionId, conn => {
                         if(conn == null)
                             return;
-                        if(string.IsNullOrEmpty(scwe.ChannelName))
-                            Context.Channels.GetChannel(scwe.ChannelName, channel => {
+                        if(string.IsNullOrEmpty(scwe.ChannelId))
+                            Context.Channels.GetChannelById(scwe.ChannelId, channel => {
                                 if(channel != null)
                                     conn.LastChannel = channel;
                                 conn.SendPacket(new ChannelSwitchPacket(conn.LastChannel));
@@ -186,44 +186,53 @@ namespace SharpChat.Protocol.SockChat {
                     });
                     break;
                 case UserDisconnectEvent ude:
-                    UserDisconnectPacket udep = new UserDisconnectPacket(ude);
-                    Connections.GetAllConnectionsByUserId(ude.UserId, conns => {
-                        foreach(SockChatConnection conn in conns)
-                            conn.SendPacket(udep);
+                    Context.Users.GetUser(ude.UserId, user => {
+                        UserDisconnectPacket udep = new UserDisconnectPacket(ude, user);
+                        Connections.GetAllConnectionsByUserId(ude.UserId, conns => {
+                            foreach(SockChatConnection conn in conns)
+                                conn.SendPacket(udep);
+                        });
                     });
                     break;
 
                 case ChannelSessionJoinEvent csje:
-                    UserJoinChannel(csje.ChannelName, csje.SessionId);
+                    UserJoinChannel(csje.ChannelId, csje.SessionId);
                     break;
 
                 case ChannelUserJoinEvent cuje: // should send UserConnectPacket on first channel join
-                    ChannelJoinPacket cjep = new ChannelJoinPacket(cuje);
-                    Connections.GetConnectionsByChannelName(cuje.ChannelName, conns => {
-                        foreach(SockChatConnection conn in conns)
-                            conn.SendPacket(cjep);
+                    Context.Users.GetUser(cuje.UserId, user => {
+                        ChannelJoinPacket cjep = new ChannelJoinPacket(cuje, user);
+                        Connections.GetConnectionsByChannelId(cuje.ChannelId, conns => {
+                            conns = conns.Where(c => !user.Equals(c.Session?.User));
+                            foreach(SockChatConnection conn in conns)
+                                conn.SendPacket(cjep);
+                        });
                     });
 
-                    UserJoinChannel(cuje.ChannelName, cuje.SessionId);
+                    UserJoinChannel(cuje.ChannelId, cuje.SessionId);
                     break;
                 case ChannelUserLeaveEvent cle:
                     ChannelLeavePacket clep = new ChannelLeavePacket(cle);
-                    Connections.GetConnectionsByChannelName(cle.ChannelName, conns => {
+                    Connections.GetConnectionsByChannelId(cle.ChannelId, conns => {
                         foreach(SockChatConnection conn in conns)
                             conn.SendPacket(clep);
                     });
                     break;
 
                 case MessageCreateEvent mce:
-                    MessageCreatePacket mcep = new MessageCreatePacket(mce);
-                    Connections.GetConnectionsByChannelName(mce.ChannelName, conns => {
-                        foreach(SockChatConnection conn in conns)
-                            conn.SendPacket(mcep);
+                    Context.Channels.GetChannelById(mce.ChannelId, channel => {
+                        if(channel == null)
+                            return;
+                        MessageCreatePacket mcep = new MessageCreatePacket(mce.MessageId, mce.UserId, mce.DateTime, channel, mce.Text, mce.IsAction);
+                        Connections.GetConnectionsByChannelId(mce.ChannelId, conns => {
+                            foreach(SockChatConnection conn in conns)
+                                conn.SendPacket(mcep);
+                        });
                     });
                     break;
                 case MessageDeleteEvent mde:
                     MessageDeletePacket mdep = new MessageDeletePacket(mde);
-                    Connections.GetConnectionsByChannelName(mde.ChannelName, conns => {
+                    Connections.GetConnectionsByChannelId(mde.ChannelId, conns => {
                         foreach(SockChatConnection conn in conns)
                             conn.SendPacket(mdep);
                     });
@@ -233,14 +242,19 @@ namespace SharpChat.Protocol.SockChat {
                         if(msg == null)
                             return;
 
-                        MessageDeletePacket muepd = new MessageDeletePacket(mue);
-                        MessageCreatePacket muecd = new MessageCreatePacket(new MessageCreateEvent(evt.SessionId, msg));
+                        Context.Channels.GetChannel(msg.Channel, channel => {
+                            if(channel == null)
+                                return;
 
-                        Connections.GetConnectionsByChannelName(mue.ChannelName, conns => {
-                            foreach(SockChatConnection conn in conns) {
-                                conn.SendPacket(muepd);
-                                conn.SendPacket(muecd);
-                            }
+                            MessageDeletePacket muepd = new MessageDeletePacket(mue);
+                            MessageCreatePacket muecd = new MessageCreatePacket(mue.MessageId, msg.Sender.UserId, mue.DateTime, channel, mue.Text, msg.IsAction);
+
+                            Connections.GetConnectionsByChannelId(mue.ChannelId, conns => {
+                                foreach(SockChatConnection conn in conns) {
+                                    conn.SendPacket(muepd);
+                                    conn.SendPacket(muecd);
+                                }
+                            });
                         });
                     });
                     break;
@@ -255,12 +269,12 @@ namespace SharpChat.Protocol.SockChat {
             }
         }
 
-        private void UserJoinChannel(string channelName, string sessionId) {
+        private void UserJoinChannel(string channelId, string sessionId) {
             Context.Sessions.GetLocalSession(sessionId, session => {
                 if(session == null || session.Connection is not SockChatConnection conn)
                     return;
 
-                Context.Channels.GetChannel(channelName, channel => {
+                Context.Channels.GetChannelById(channelId, channel => {
                     Context.ChannelUsers.GetUsers(channel, users => conn.SendPacket(
                         new ContextUsersPacket(users.Except(new[] { session.User }).OrderByDescending(u => u.Rank))
                     ));

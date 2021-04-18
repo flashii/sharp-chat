@@ -17,24 +17,14 @@ namespace SharpChat.Protocol.SockChat.Packets {
 
             sb.Append((int)ServerPacketId.UserUpdate);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Update.UserId.UserId);
+            sb.Append(Update.UserId);
             sb.Append(IServerPacket.SEPARATOR);
-            if(Update.Status == UserStatus.Away && Update.HasStatusMessage)
-                sb.Append(Update.StatusMessage.ToAFKString());
-            else if(Update.Status == UserStatus.Away)
-                sb.Append(Update.UserId.StatusMessage.ToAFKString());
-            if(Update.HasNickName) {
-                sb.Append('~');
-                sb.Append(Update.NickName);
-            } else if(Update.HasUserName)
-                sb.Append(Update.UserName);
-            else
-                sb.Append(Update.UserId.GetDisplayName());
+            sb.Append(Update.GetDisplayName());
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Update.Colour ?? Update.UserId.Colour);
+            sb.Append(Update.NewColour ?? Update.OldColour);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Update.Rank ?? Update.UserId.Rank);
-            (Update.Perms ?? Update.UserId.Permissions).Pack(sb);
+            sb.Append(Update.NewRank ?? Update.OldRank);
+            (Update.NewPerms ?? Update.OldPerms).Pack(sb);
 
             return sb.ToString();
         }

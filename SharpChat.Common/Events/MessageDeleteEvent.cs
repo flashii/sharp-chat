@@ -9,12 +9,12 @@ namespace SharpChat.Events {
         public long MessageId { get; }
 
         public MessageDeleteEvent(IUser actor, IMessage message)
-            : base(message.Channel, actor) {
+            : base(actor, message.Channel) {
             MessageId = message.MessageId;
         }
 
         public MessageDeleteEvent(MessageUpdateEvent mue)
-            : base(mue.ChannelName, mue.UserId) {
+            : base(mue.UserId, mue.ChannelId, null, null) {
             MessageId = mue.MessageId;
         }
     }
