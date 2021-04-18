@@ -71,6 +71,10 @@ namespace SharpChat.Protocol {
                 throw new ArgumentNullException(nameof(sessionId));
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
+            if(string.IsNullOrWhiteSpace(sessionId)) {
+                callback(default);
+                return;
+            }
             GetConnection(c => c.Session != null && sessionId.Equals(c.Session.SessionId), callback);
         }
 
@@ -95,6 +99,14 @@ namespace SharpChat.Protocol {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
             GetConnections(c => c.Session != null && user.Equals(c.Session.User), callback);
+        }
+
+        public void GetConnectionsByChannelName(string channelName, Action<IEnumerable<TConnection>> callback) {
+            if(channelName == null)
+                throw new ArgumentNullException(nameof(channelName));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            ChannelUsers.GetLocalSessionsByChannelName(channelName, sessions => GetConnections(sessions, callback));
         }
 
         public void GetConnections(IChannel channel, Action<IEnumerable<TConnection>> callback) {
@@ -124,6 +136,16 @@ namespace SharpChat.Protocol {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
             ChannelUsers.GetLocalSessions(user, sessions => GetConnections(sessions, callback));
+        }
+
+        public void GetAllConnectionsByUserId(long userId, Action<IEnumerable<TConnection>> callback) {
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            if(userId < 1) {
+                callback(Enumerable.Empty<TConnection>());
+                return;
+            }
+            ChannelUsers.GetLocalSessionsByUserId(userId, sessions => GetConnections(sessions, callback));
         }
 
         public void GetDeadConnections(Action<IEnumerable<TConnection>> callback) {

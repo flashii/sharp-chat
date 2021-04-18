@@ -78,13 +78,13 @@ namespace SharpChat.Messages.Storage {
                     + @", @text, @flags, " + Wrapper.FromUnixTime(@"@created")
                 + @");",
                 Wrapper.CreateParam(@"id", mce.MessageId),
-                Wrapper.CreateParam(@"channelName", mce.Channel.Name),
-                Wrapper.CreateParam(@"senderId", mce.User.UserId),
-                Wrapper.CreateParam(@"senderName", mce.User.UserName),
-                Wrapper.CreateParam(@"senderColour", mce.User.Colour.Raw),
-                Wrapper.CreateParam(@"senderRank", mce.User.Rank),
-                Wrapper.CreateParam(@"senderNick", string.IsNullOrWhiteSpace(mce.User.NickName) ? null : mce.User.NickName),
-                Wrapper.CreateParam(@"senderPerms", mce.User.Permissions),
+                Wrapper.CreateParam(@"channelName", mce.ChannelName),
+                Wrapper.CreateParam(@"senderId", mce.UserId),
+                Wrapper.CreateParam(@"senderName", mce.UserName),
+                Wrapper.CreateParam(@"senderColour", mce.UserColour.Raw),
+                Wrapper.CreateParam(@"senderRank", mce.UserRank),
+                Wrapper.CreateParam(@"senderNick", mce.UserNickName),
+                Wrapper.CreateParam(@"senderPerms", mce.UserPermissions),
                 Wrapper.CreateParam(@"text", mce.Text),
                 Wrapper.CreateParam(@"flags", flags),
                 Wrapper.CreateParam(@"created", mce.DateTime.ToUnixTimeSeconds())
@@ -123,7 +123,7 @@ namespace SharpChat.Messages.Storage {
             Wrapper.RunCommand(
                 @"UPDATE `sqc_messages` SET `msg_deleted` = " + Wrapper.FromUnixTime(@"@deleted") + @" WHERE `msg_channel_name` = @name AND `msg_deleted` IS NULL",
                 Wrapper.CreateParam(@"deleted", cde.DateTime.ToUnixTimeSeconds()),
-                Wrapper.CreateParam(@"name", cde.Channel.Name)
+                Wrapper.CreateParam(@"name", cde.ChannelName)
             );
         }
 

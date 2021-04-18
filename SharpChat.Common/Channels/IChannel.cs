@@ -1,5 +1,4 @@
-﻿using SharpChat.Users;
-using System;
+﻿using System;
 
 namespace SharpChat.Channels {
     public interface IChannel : IEquatable<IChannel> {
@@ -9,7 +8,7 @@ namespace SharpChat.Channels {
         int MinimumRank { get; }
         bool AutoJoin { get; }
         uint MaxCapacity { get; }
-        IUser Owner { get; }
+        long OwnerId { get; }
 
         string Password { get; }
         bool HasPassword { get; }

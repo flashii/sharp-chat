@@ -17,9 +17,9 @@ namespace SharpChat.Protocol.SockChat.Packets {
 
             sb.Append((int)ServerPacketId.UserDisconnect);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Disconnect.User.UserId);
+            sb.Append(Disconnect.UserId.UserId);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Disconnect.User.GetDisplayName());
+            sb.Append(Disconnect.UserId.GetDisplayName());
             sb.Append(IServerPacket.SEPARATOR);
 
             switch(Disconnect.Reason) {

@@ -19,7 +19,7 @@ namespace SharpChat.Protocol.SockChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Connect.DateTime.ToUnixTimeSeconds());
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Connect.User.Pack());
+            sb.Append(Connect.UserId.Pack());
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Connect.EventId);
 

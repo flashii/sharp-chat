@@ -55,6 +55,18 @@ namespace SharpChat.Sessions {
             }
         }
 
+        public void GetSession(string sessionId, Action<ISession> callback) {
+            if(sessionId == null)
+                throw new ArgumentNullException(nameof(sessionId));
+            if(callback == null)
+                throw new ArgumentNullException(nameof(callback));
+            if(string.IsNullOrWhiteSpace(sessionId)) {
+                callback(null);
+                return;
+            }
+            GetSession(s => sessionId.Equals(s.SessionId), callback);
+        }
+
         public void GetSession(ISession session, Action<ISession> callback) {
             if(session == null)
                 throw new ArgumentNullException(nameof(session));
@@ -328,7 +340,7 @@ namespace SharpChat.Sessions {
                 case SessionPingEvent _:
                 case SessionResumeEvent _:
                 case SessionSuspendEvent _:
-                    GetSession(evt.Session, session => session?.HandleEvent(sender, evt));
+                    GetSession(evt.SessionId, session => session?.HandleEvent(sender, evt));
                     break;
 
                 case SessionCreatedEvent sce:
@@ -336,7 +348,7 @@ namespace SharpChat.Sessions {
                     break;
 
                 case SessionDestroyEvent sde:
-                    GetSession(sde.Session, session => {
+                    GetSession(sde.SessionId, session => {
                         Sessions.Remove(session);
                         session.HandleEvent(sender, sde);
                     });

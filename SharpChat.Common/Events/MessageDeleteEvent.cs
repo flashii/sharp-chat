@@ -14,7 +14,7 @@ namespace SharpChat.Events {
         }
 
         public MessageDeleteEvent(MessageUpdateEvent mue)
-            : base(mue.Channel, mue.User) {
+            : base(mue.ChannelName, mue.UserId) {
             MessageId = mue.MessageId;
         }
     }

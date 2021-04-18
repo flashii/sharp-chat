@@ -11,7 +11,7 @@ namespace SharpChat.Messages.Storage {
         public int MinimumRank => 0;
         public bool AutoJoin => false;
         public uint MaxCapacity => 0;
-        public IUser Owner => null;
+        public long OwnerId => -1;
         public string Password => string.Empty;
         public bool HasPassword => false;
 

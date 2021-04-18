@@ -41,7 +41,7 @@ namespace SharpChat.Protocol.SockChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Event.DateTime.ToUnixTimeSeconds());
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Event.User.UserId);
+            sb.Append(Event.UserId.UserId);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Text);
             sb.Append(IServerPacket.SEPARATOR);
@@ -55,7 +55,7 @@ namespace SharpChat.Protocol.SockChat.Packets {
             );
             sb.Append(IServerPacket.SEPARATOR);
             if(!Event.IsBroadcast())
-                sb.Append(Event.Channel.Name);
+                sb.Append(Event.ChannelName.Name);
 
             return sb.ToString();
         }

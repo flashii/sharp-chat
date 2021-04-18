@@ -79,10 +79,10 @@ namespace SharpChat.Users {
             lock(Sync) {
                 switch(evt) {
                     case ChannelUserJoinEvent cje:
-                        Channels.Add(evt.Channel.Name);
+                        Channels.Add(evt.ChannelName.Name);
                         break;
                     case ChannelUserLeaveEvent cle:
-                        Channels.Remove(evt.Channel.Name);
+                        Channels.Remove(evt.ChannelName.Name);
                         break;
 
                     case UserUpdateEvent uue:

@@ -33,7 +33,7 @@ namespace SharpChat.Protocol.IRC.ServerCommands {
         }
 
         public static IEnumerable<ServerPrivateMessageCommand> Split(MessageCreateEvent mce) {
-            return Split(mce.Channel, mce.User, mce.Text);
+            return Split(mce.ChannelName, mce.UserId, mce.Text);
         }
 
         public static IEnumerable<ServerPrivateMessageCommand> Split(IChannel channel, IUser sender, string text) {

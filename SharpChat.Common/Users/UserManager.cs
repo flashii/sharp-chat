@@ -19,18 +19,18 @@ namespace SharpChat.Users {
                 return;
 
             lock(Sync) {
-                if(Contains(uce.User))
+                if(Users.Any(u => u.UserId == uce.UserId))
                     throw new ArgumentException(@"User already registered?????", nameof(uce));
 
                 Users.Add(new User(
-                    uce.User.UserId,
-                    uce.User.UserName,
-                    uce.User.Colour,
-                    uce.User.Rank,
-                    uce.User.Permissions,
+                    uce.UserId,
+                    uce.Name,
+                    uce.Colour,
+                    uce.Rank,
+                    uce.Permissions,
                     uce.Status,
                     uce.StatusMessage,
-                    uce.User.NickName
+                    uce.NickName
                 ));
             }
         }
@@ -42,7 +42,7 @@ namespace SharpChat.Users {
         }
 
         private void OnDisconnect(object sender, UserDisconnectEvent ude) {
-            GetUser(ude.User, user => {
+            GetUser(ude.UserId, user => {
                 if(user == null)
                     return;
                 if(user is IEventHandler ueh)
@@ -51,21 +51,12 @@ namespace SharpChat.Users {
         }
 
         private void OnUpdate(object sender, UserUpdateEvent uue) {
-            GetUser(uue.User, user => {
+            GetUser(uue.UserId, user => {
                 if(user == null)
                     return;
                 if(user is IEventHandler ueh)
                     ueh.HandleEvent(sender, uue);
             });
-        }
-
-        private bool Contains(IUser user) {
-            if(user == null)
-                return false;
-
-            lock(Sync)
-                return Users.Contains(user) // the below should probably use .Equals
-                    || Users.Any(x => x.Equals(user) || x.UserName.ToLowerInvariant() == user.UserName.ToLowerInvariant());
         }
 
         public void GetUser(Func<IUser, bool> predicate, Action<IUser> callback) {

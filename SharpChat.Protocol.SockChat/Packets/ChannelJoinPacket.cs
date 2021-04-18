@@ -18,11 +18,11 @@ namespace SharpChat.Protocol.SockChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append((int)ServerMoveSubPacketId.UserJoined);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Join.User.UserId);
+            sb.Append(Join.UserId.UserId);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Join.User.GetDisplayName());
+            sb.Append(Join.UserId.GetDisplayName());
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Join.User.Colour);
+            sb.Append(Join.UserId.Colour);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Join.EventId);
 

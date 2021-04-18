@@ -1,5 +1,6 @@
 ﻿using SharpChat.Messages;
 using SharpChat.Sessions;
+using SharpChat.Users;
 
 namespace SharpChat.Events {
     [Event(TYPE)]
@@ -10,11 +11,21 @@ namespace SharpChat.Events {
         public string Text { get; }
         public bool IsAction { get; }
 
+        public string UserName { get; }
+        public Colour UserColour { get; }
+        public int UserRank { get; }
+        public string UserNickName { get; }
+        public UserPermissions UserPermissions { get; }
+
         public MessageCreateEvent(ISession session, IMessage message)
             : base(message.Channel, message.Sender, session, session.Connection, message.Created) {
             MessageId = message.MessageId;
             Text = message.Text;
             IsAction = message.IsAction;
+            UserColour = message.Sender.Colour;
+            UserRank = message.Sender.Rank;
+            UserNickName = string.IsNullOrWhiteSpace(message.Sender.NickName) ? null : message.Sender.NickName;
+            UserPermissions = message.Sender.Permissions;
         }
     }
 }

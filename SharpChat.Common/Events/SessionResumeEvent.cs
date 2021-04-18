@@ -12,7 +12,7 @@ namespace SharpChat.Events {
         public IPAddress RemoteAddress { get; }
 
         public bool HasConnection
-            => Connection != null;
+            => ConnectionId != null;
 
         public SessionResumeEvent(ISession session, string serverId, IPAddress remoteAddress)
             : base(null, session.User, session, session.Connection) {

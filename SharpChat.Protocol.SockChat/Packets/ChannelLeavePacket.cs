@@ -17,7 +17,7 @@ namespace SharpChat.Protocol.SockChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append((int)ServerMoveSubPacketId.UserLeft);
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(Leave.User.UserId);
+            sb.Append(Leave.UserId.UserId);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Leave.EventId);
 

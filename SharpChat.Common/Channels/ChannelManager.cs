@@ -75,7 +75,7 @@ namespace SharpChat.Channels {
                         maxCapacity = config.SafeReadValue(@"maxCapacity", 0u);
                     }
 
-                    Create(Bot, channelName, topic, false, minRank, password, autoJoin, maxCapacity);
+                    Create(Bot.UserId, channelName, topic, false, minRank, password, autoJoin, maxCapacity);
                 }
 
                 if(DefaultChannel == null || DefaultChannel.IsTemporary || !channelNames.Contains(DefaultChannel.Name))
@@ -133,7 +133,7 @@ namespace SharpChat.Channels {
         }
 
         public IChannel Create(
-            IUser owner,
+            long ownerId,
             string name,
             string topic = null,
             bool temp = true,
@@ -147,7 +147,7 @@ namespace SharpChat.Channels {
             ValidateName(name);
 
             lock(Sync) {
-                Channel channel = new Channel(name, topic, temp, minRank, password, autoJoin, maxCapacity, owner);
+                Channel channel = new Channel(name, topic, temp, minRank, password, autoJoin, maxCapacity, ownerId);
                 Channels.Add(channel);
                 
                 // Should this remain?
@@ -346,7 +346,7 @@ namespace SharpChat.Channels {
                     cce.Password,
                     cce.AutoJoin,
                     cce.MaxCapacity,
-                    cce.User
+                    cce.UserId
                 ));
             }
         }
@@ -356,7 +356,7 @@ namespace SharpChat.Channels {
                 return;
 
             lock(Sync) {
-                Channel channel = Channels.FirstOrDefault(c => c.Equals(cde.Channel));
+                Channel channel = Channels.FirstOrDefault(c => c.Equals(cde.ChannelName));
                 if(channel != null)
                     Channels.Remove(channel);
             }
@@ -364,7 +364,7 @@ namespace SharpChat.Channels {
 
         private void OnEvent(object sender, IEvent evt) {
             lock(Sync) {
-                Channel channel = Channels.FirstOrDefault(c => c.Equals(evt.Channel));
+                Channel channel = Channels.FirstOrDefault(c => c.Equals(evt.ChannelName));
                 if(channel != null)
                     channel.HandleEvent(sender, evt);
             }

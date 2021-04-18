@@ -18,7 +18,7 @@ namespace SharpChat.Sessions {
 
         private readonly object Sync = new object();
 
-        public IConnection Connection { get; private set; }
+        public IConnection Connection { get; set; }
 
         private long LastEvent { get; set; } // use this to get a session back up to speed after reconnection
 
@@ -78,10 +78,6 @@ namespace SharpChat.Sessions {
                         break;
                     case SessionResumeEvent sre:
                         IsConnected = true;
-                        if(sre.HasConnection) {
-                            Connection = sre.Connection;
-                            Connection.Session = this;
-                        }
                         RemoteAddress = sre.RemoteAddress;
                         ServerId = sre.ServerId;
                         LastPing = DateTimeOffset.Now; // yes?

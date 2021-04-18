@@ -13,7 +13,7 @@ namespace SharpChat.Channels {
         public int MinimumRank { get; private set; }
         public bool AutoJoin { get; private set; }
         public uint MaxCapacity { get; private set; }
-        public IUser Owner { get; private set; }
+        public long OwnerId { get; private set; }
 
         private readonly object Sync = new object();
         private HashSet<long> Users { get; } = new HashSet<long>();
@@ -34,7 +34,7 @@ namespace SharpChat.Channels {
             string password = null,
             bool autoJoin = false,
             uint maxCapacity = 0,
-            IUser owner = null
+            long ownerId = -1
         ) {
             Name = name;
             Topic = topic;
@@ -43,7 +43,7 @@ namespace SharpChat.Channels {
             Password = password ?? string.Empty;
             AutoJoin = autoJoin;
             MaxCapacity = maxCapacity;
-            Owner = owner;
+            OwnerId = ownerId;
         }
 
         public bool VerifyPassword(string password) {
@@ -116,19 +116,19 @@ namespace SharpChat.Channels {
 
                 case ChannelUserJoinEvent cuje:
                     lock(Sync) {
-                        Sessions.Add(cuje.SessionId, cuje.User.UserId);
-                        Users.Add(cuje.User.UserId);
+                        Sessions.Add(cuje.SessionId, cuje.UserId);
+                        Users.Add(cuje.UserId);
                     }
                     break;
                 case ChannelSessionJoinEvent csje:
                     lock(Sync)
-                        Sessions.Add(csje.SessionId, csje.User.UserId);
+                        Sessions.Add(csje.SessionId, csje.UserId);
                     break;
 
                 case ChannelUserLeaveEvent cule:
                     lock(Sync) {
-                        Users.Remove(cule.User.UserId);
-                        Queue<string> delete = new Queue<string>(Sessions.Where(s => s.Value == cule.User.UserId).Select(s => s.Key));
+                        Users.Remove(cule.UserId);
+                        Queue<string> delete = new Queue<string>(Sessions.Where(s => s.Value == cule.UserId).Select(s => s.Key));
                         while(delete.TryDequeue(out string sessionId))
                             Sessions.Remove(sessionId);
                     }

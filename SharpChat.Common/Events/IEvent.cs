@@ -1,16 +1,12 @@
-﻿using SharpChat.Channels;
-using SharpChat.Protocol;
-using SharpChat.Sessions;
-using SharpChat.Users;
-using System;
+﻿using System;
 
 namespace SharpChat.Events {
     public interface IEvent {
         long EventId { get; }
         DateTimeOffset DateTime { get; }
-        IUser User { get; }
-        IChannel Channel { get; }
-        ISession Session { get; }
-        IConnection Connection { get; }
+        long UserId { get; }
+        string ChannelName { get; }
+        string SessionId { get; }
+        string ConnectionId { get; }
     }
 }

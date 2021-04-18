@@ -2,6 +2,7 @@
 using SharpChat.Configuration;
 using SharpChat.Events;
 using SharpChat.Messages.Storage;
+using SharpChat.Sessions;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -24,7 +25,7 @@ namespace SharpChat.Messages {
             TextMaxLengthValue = Config.ReadCached(@"maxLength", DEFAULT_LENGTH_MAX);
         }
 
-        public Message Create(IUser sender, IChannel channel, string text, bool isAction = false) {
+        public Message Create(ISession session, IUser sender, IChannel channel, string text, bool isAction = false) {
             if(sender == null)
                 throw new ArgumentNullException(nameof(sender));
             if(channel == null)
@@ -38,7 +39,7 @@ namespace SharpChat.Messages {
                 throw new ArgumentException(@"Provided text is too long.", nameof(text));
 
             Message message = new Message(channel, sender, text, isAction);
-            Dispatcher.DispatchEvent(this, new MessageCreateEvent(message));
+            Dispatcher.DispatchEvent(this, new MessageCreateEvent(session, message));
             return message;
         }
 
