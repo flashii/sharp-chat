@@ -21,13 +21,16 @@ namespace SharpChat.Sessions {
         private IEventDispatcher Dispatcher { get; }
         private string ServerId { get; }
 
+        private UserManager Users { get; }
+
         private List<ISession> Sessions { get; } = new List<ISession>();
         private List<Session> LocalSessions { get; } = new List<Session>();
 
-        public SessionManager(IEventDispatcher dispatcher, string serverId, IConfig config) {
+        public SessionManager(IEventDispatcher dispatcher, UserManager users, IConfig config, string serverId) {
             if(config == null)
                 throw new ArgumentNullException(nameof(config));
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+            Users = users ?? throw new ArgumentNullException(nameof(users));
             ServerId = serverId ?? throw new ArgumentNullException(nameof(serverId));
             MaxPerUser = config.ReadCached(@"maxCount", DEFAULT_MAX_COUNT);
             TimeOut = config.ReadCached(@"timeOut", DEFAULT_TIMEOUT);
@@ -222,7 +225,7 @@ namespace SharpChat.Sessions {
             Session sess = null;
 
             lock(Sync) {
-                sess = new Session(ServerId, conn, user);
+                sess = new Session(ServerId, RNG.NextString(Session.ID_LENGTH), conn.IsSecure, null, user, true, conn, conn.RemoteAddress);
                 LocalSessions.Add(sess);
                 Sessions.Add(sess);
             }
@@ -344,7 +347,14 @@ namespace SharpChat.Sessions {
                     break;
 
                 case SessionCreatedEvent sce:
-                    // sce needs to have sufficient info the create a session
+                    if(ServerId.Equals(sce.ServerId)) // we created the session
+                        break;
+
+                    lock(Sync)
+                        Users.GetUser(sce.UserId, user => {
+                            if(user != null) // if we get here and there's no user we've either hit a race condition or we're out of sync somehow
+                                Sessions.Add(new Session(sce.ServerId, sce.SessionId, sce.IsSecure, sce.LastPing, user, sce.IsConnected, null, sce.RemoteAddress));
+                        });
                     break;
 
                 case SessionDestroyEvent sde:

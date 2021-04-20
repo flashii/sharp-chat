@@ -10,6 +10,8 @@ namespace SharpChat.Sessions {
 
         public string SessionId { get; }
         public string ServerId { get; private set; }
+        public bool IsSecure { get; }
+
         public DateTimeOffset LastPing { get; private set; }
         public IUser User { get; }
 
@@ -22,32 +24,23 @@ namespace SharpChat.Sessions {
 
         private long LastEvent { get; set; } // use this to get a session back up to speed after reconnection
 
-        public Session(string serverId, IConnection connection, IUser user)
-            : this(
-                  serverId,
-                  RNG.NextString(ID_LENGTH),
-                  DateTimeOffset.Now,
-                  user,
-                  connection != null,
-                  connection?.RemoteAddress
-            ) {
-            Connection = connection;
-            Connection.Session = this; // there needs to be a better way to do this
-        }
-
         public Session(
             string serverId,
             string sessionId,
-            DateTimeOffset? lastPing = null,
-            IUser user = null,
-            bool isConnected = false,
-            IPAddress remoteAddress = null
+            bool isSecure,
+            DateTimeOffset? lastPing,
+            IUser user,
+            bool isConnected,
+            IConnection connection,
+            IPAddress remoteAddress
         ) {
             ServerId = serverId ?? throw new ArgumentNullException(nameof(serverId));
             SessionId = sessionId ?? throw new ArgumentNullException(nameof(sessionId));
+            IsSecure = isSecure;
             LastPing = lastPing ?? DateTimeOffset.MinValue;
             User = user;
             IsConnected = isConnected;
+            Connection = connection;
             RemoteAddress = remoteAddress ?? IPAddress.None;
         }
 

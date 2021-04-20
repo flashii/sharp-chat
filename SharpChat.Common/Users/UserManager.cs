@@ -82,15 +82,39 @@ namespace SharpChat.Users {
             GetUser(user.Equals, callback);
         }
 
-        // feel like this one should be obsoleted entirely 
-        public void GetUser(string username, Action<IUser> callback, bool includeNickName = true, bool includeDisplayName = true) {
+        [Flags]
+        public enum NameLookUpMode {
+            UserName = 0x1,
+            NickName = 0x2,
+
+            UserNameAndNickName = UserName | NickName,
+        }
+
+        public void GetUser(string userName, Action<IUser> callback, NameLookUpMode lookUpMode = NameLookUpMode.UserNameAndNickName) {
+            if(userName == null)
+                throw new ArgumentNullException(nameof(userName));
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
-            if(string.IsNullOrWhiteSpace(username))
+
+            if(string.IsNullOrWhiteSpace(userName)) {
+                callback(null);
                 return;
-            GetUser(u => u.UserName.ToLowerInvariant() == username
-                    || (includeNickName && u.NickName?.ToLowerInvariant() == username)
-                    /*|| (includeDisplayName && u.GetDisplayName().ToLowerInvariant() == username)*/, callback);
+            }
+
+            Func<IUser, bool> predicate = null;
+            if((lookUpMode & NameLookUpMode.UserNameAndNickName) == NameLookUpMode.UserNameAndNickName)
+                predicate = new Func<IUser, bool>(u => userName.Equals(u.UserName, StringComparison.InvariantCultureIgnoreCase) || userName.Equals(u.NickName, StringComparison.InvariantCultureIgnoreCase));
+            else if((lookUpMode & NameLookUpMode.UserName) == NameLookUpMode.UserName)
+                predicate = new Func<IUser, bool>(u => userName.Equals(u.UserName, StringComparison.InvariantCultureIgnoreCase));
+            else if((lookUpMode & NameLookUpMode.NickName) == NameLookUpMode.NickName)
+                predicate = new Func<IUser, bool>(u => userName.Equals(u.NickName, StringComparison.InvariantCultureIgnoreCase));
+
+            if(predicate == null) {
+                callback(null);
+                return;
+            }
+
+            GetUser(predicate, callback);
         }
 
         public void GetUsers(Action<IEnumerable<IUser>> callback) {

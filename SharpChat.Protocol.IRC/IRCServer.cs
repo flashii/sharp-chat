@@ -2,9 +2,6 @@
 using SharpChat.Configuration;
 using SharpChat.Events;
 using SharpChat.Protocol.IRC.ClientCommands;
-using SharpChat.Protocol.IRC.ClientCommands.Modern;
-using SharpChat.Protocol.IRC.ClientCommands.RFC1459;
-using SharpChat.Protocol.IRC.ClientCommands.RFC2810;
 using SharpChat.Protocol.IRC.Replies;
 using SharpChat.Protocol.IRC.ServerCommands;
 using System;
@@ -56,9 +53,9 @@ namespace SharpChat.Protocol.IRC {
                 handlers.Add(handler.CommandName, handler);
             };
 
-            // RFC 1459
             addHandler(new AdminCommand(this));
             addHandler(new AwayCommand(Context.Users));
+            addHandler(new CapabilitiesCommand());
             addHandler(new InfoCommand());
             addHandler(new InviteCommand(Context.Users, Context.Channels, Context.ChannelUsers));
             addHandler(new IsOnCommand(Context.Users));
@@ -68,15 +65,20 @@ namespace SharpChat.Protocol.IRC {
             addHandler(new ListCommand(Context.Channels, Context.ChannelUsers));
             addHandler(new ListUsersCommand());
             addHandler(new MessageOfTheDayCommand());
-            addHandler(new ModeCommand());
+            addHandler(new ModeCommand(Context.Channels, Context.Users, Context.Sessions));
             addHandler(new NamesCommand());
-            addHandler(new NickCommand());
+            addHandler(new NickCommand(Context.Users));
             addHandler(new NoticeCommand());
             addHandler(new PartCommand(Context.Channels, Context.ChannelUsers));
             addHandler(new PassCommand());
             addHandler(new PingCommand(this, Context.Sessions));
             addHandler(new PrivateMessageCommand(Context.Channels, Context.ChannelUsers, Context.Messages));
-            addHandler(new QuitCommand());
+            addHandler(new QuitCommand(Context.Sessions));
+            addHandler(new ServerQuitCommand());
+            addHandler(new ServiceCommand());
+            addHandler(new ServiceListCommand());
+            addHandler(new ServiceQueryCommand());
+            addHandler(new SilenceCommand());
             addHandler(new StatsCommand());
             addHandler(new SummonCommand());
             addHandler(new TimeCommand());
@@ -97,14 +99,6 @@ namespace SharpChat.Protocol.IRC {
             addHandler(new WhoCommand());
             addHandler(new WhoIsCommand());
             addHandler(new WhoWasCommand());
-
-            // RFC 2810
-            addHandler(new ServiceListCommand());
-            addHandler(new ServiceQueryCommand());
-
-            // Modern
-            addHandler(new CapabilitiesCommand());
-            addHandler(new SilenceCommand());
 
             Commands = handlers;
         }

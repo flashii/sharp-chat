@@ -51,7 +51,7 @@ namespace SharpChat {
                 : new ADOMessageStorage(db);
 
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
-            Sessions = new SessionManager(this, ServerId, config.ScopeTo(@"sessions"));
+            Sessions = new SessionManager(this, Users, config.ScopeTo(@"sessions"), ServerId);
             Messages = new MessageManager(this, msgStore, config.ScopeTo(@"messages"));
             Users = new UserManager(this);
             Channels = new ChannelManager(this, config, Bot);

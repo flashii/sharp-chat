@@ -8,6 +8,7 @@ namespace SharpChat.Sessions {
     public interface ISession : IEventHandler, IEquatable<ISession> {
         string SessionId { get; }
         string ServerId { get; }
+        bool IsSecure { get; }
 
         DateTimeOffset LastPing { get; }
         IUser User { get; }

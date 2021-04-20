@@ -42,15 +42,9 @@ namespace SharpChat.Protocol.SockChat.Commands {
             if(ctx.Args.Count() < offset)
                 throw new CommandFormatException();
 
-            string nickStr = string.Join('_', ctx.Args.Skip(offset))
-                .Replace(' ', '_')
-                .Replace("\n", string.Empty)
-                .Replace("\r", string.Empty)
-                .Replace("\f", string.Empty)
-                .Replace("\t", string.Empty)
-                .Trim();
+            string nickStr = string.Join('_', ctx.Args.Skip(offset)).CleanNickName().Trim();
 
-            if(nickStr == targetUser.UserName)
+            if(nickStr.Equals(targetUser.UserName, StringComparison.InvariantCulture))
                 nickStr = null;
             else if(nickStr.Length > 15)
                 nickStr = nickStr.Substring(0, 15);

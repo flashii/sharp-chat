@@ -1,4 +1,5 @@
 ﻿using SharpChat.Protocol.SockChat.Packets;
+using SharpChat.Protocol.SockChat.Users;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
@@ -25,7 +26,7 @@ namespace SharpChat.Protocol.SockChat.Commands {
             if(string.IsNullOrEmpty(userName))
                 throw new UserNotFoundCommandException(userName);
 
-            Users.GetUser(userName, user => {
+            Users.GetUserBySockChatName(userName, user => {
                 if(user == null)
                     throw new UserNotFoundCommandException(userName);
                 if(user.Rank >= ctx.User.Rank)

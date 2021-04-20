@@ -13,7 +13,7 @@ namespace SharpChat.Protocol.IRC.Replies {
         }
 
         protected override string BuildLine() {
-            return $@":{Server.ServerHost} {SharpInfo.ProgramName} ABCOaiowxz PTahklmnoqstvz";
+            return $@":{Server.ServerHost} {SharpInfo.ProgramName} ABCaiowxz PTahklmnoqstvz";
         }
     }
 }

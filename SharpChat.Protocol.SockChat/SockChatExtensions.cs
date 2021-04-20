@@ -18,5 +18,14 @@
                 .Replace(@">", @"&gt;")
                 .Replace("\n", @" <br/> ");
         }
+
+        public static string CleanNickName(this string nick) {
+            return nick
+                .Replace(' ', '_')
+                .Replace("\n", string.Empty)
+                .Replace("\r", string.Empty)
+                .Replace("\f", string.Empty)
+                .Replace("\t", string.Empty);
+        }
     }
 }
