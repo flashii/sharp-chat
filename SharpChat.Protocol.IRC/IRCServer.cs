@@ -33,8 +33,6 @@ namespace SharpChat.Protocol.IRC {
 
         private byte[] Buffer { get; } = new byte[BUFFER_SIZE];
 
-        private readonly object Sync = new object();
-
         // I feel like these two could be generalised
         private CachedValue<string> ServerHostValue { get; }
         private CachedValue<string> NetworkNameValue { get; }
@@ -83,7 +81,16 @@ namespace SharpChat.Protocol.IRC {
             addHandler(new SummonCommand());
             addHandler(new TimeCommand());
             addHandler(new TopicCommand());
-            addHandler(new UserCommand(this, Context, Context.Users, Context.Sessions, Context.DataProvider));
+            addHandler(new UserCommand(
+                this,
+                Context,
+                Context.Users,
+                Context.Channels,
+                Context.ChannelUsers,
+                Context.Sessions,
+                Context.DataProvider,
+                Context.WelcomeMessage
+            ));
             addHandler(new UserHostCommand());
             addHandler(new VersionCommand());
             addHandler(new WAllOpsCommand());
@@ -328,12 +335,11 @@ namespace SharpChat.Protocol.IRC {
 
             IsRunning = false;
 
-            if(Socket != null)
-                lock(Sync) {
-                    // kill all connections
+            if(Socket != null) {
+                // kill all connections
 
-                    Socket.Dispose();
-                }
+                Socket.Dispose();
+            }
         }
     }
 }

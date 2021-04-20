@@ -13,6 +13,7 @@ namespace SharpChat.Messages.Storage {
         public long OwnerId => -1;
         public string Password => string.Empty;
         public bool HasPassword => false;
+        public int Order => 0;
 
         public MemoryMessageChannel(IEvent evt) {
             ChannelId = evt.ChannelId;

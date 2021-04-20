@@ -16,6 +16,7 @@ namespace SharpChat.Channels {
         public int MinimumRank { get; private set; }
         public bool AutoJoin { get; private set; }
         public uint MaxCapacity { get; private set; }
+        public int Order { get; private set; }
         public long OwnerId { get; private set; }
 
         private readonly object Sync = new object();
@@ -32,13 +33,14 @@ namespace SharpChat.Channels {
         public Channel(
             string channelId,
             string name,
-            string topic = null,
-            bool temp = false,
-            int minimumRank = 0,
-            string password = null,
-            bool autoJoin = false,
-            uint maxCapacity = 0,
-            long ownerId = -1
+            string topic,
+            bool temp,
+            int minimumRank,
+            string password,
+            bool autoJoin,
+            uint maxCapacity,
+            long ownerId,
+            int order
         ) {
             ChannelId = channelId ?? throw new ArgumentNullException(nameof(channelId));
             Name = name ?? throw new ArgumentNullException(nameof(name));
@@ -49,6 +51,7 @@ namespace SharpChat.Channels {
             AutoJoin = autoJoin;
             MaxCapacity = maxCapacity;
             OwnerId = ownerId;
+            Order = order;
         }
 
         public bool VerifyPassword(string password) {
@@ -116,6 +119,8 @@ namespace SharpChat.Channels {
                             AutoJoin = update.AutoJoin.Value;
                         if(update.MaxCapacity.HasValue)
                             MaxCapacity = update.MaxCapacity.Value;
+                        if(update.Order.HasValue)
+                            Order = update.Order.Value;
                     }
                     break;
 

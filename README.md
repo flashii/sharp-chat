@@ -7,4 +7,6 @@
                      /_/                             
 ```
 
-Welcome to the repository of the temporary Flashii chat server. This is a reimplementation of the old [PHP based Sock Chat server](https://github.com/flashwave/mahou-chat/) in C#.
+Welcome to the repository of the temporary Flashii chat server. SharpChat is an event based chat server supporting multiple protocols (currently Sock Chat and IRC).
+
+> Formerly [PHP Sock Chat](https://github.com/flashwave/mahou-chat/) but without PHP but with C# but also with multiple sessions

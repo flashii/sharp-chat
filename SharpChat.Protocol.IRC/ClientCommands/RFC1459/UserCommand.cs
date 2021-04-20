@@ -1,5 +1,7 @@
-﻿using SharpChat.DataProvider;
+﻿using SharpChat.Channels;
+using SharpChat.DataProvider;
 using SharpChat.Protocol.IRC.Replies;
+using SharpChat.Protocol.IRC.ServerCommands;
 using SharpChat.Sessions;
 using SharpChat.Users;
 using SharpChat.Users.Auth;
@@ -12,23 +14,36 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
     public class UserCommand : IClientCommand {
         public const string NAME = @"USER";
 
-        private const string WELCOME = @"welcome.txt";
-
         public string CommandName => NAME;
         public bool RequireSession => false;
 
         private IRCServer Server { get; }
         private Context Context { get; }
         private UserManager Users { get; }
+        private ChannelManager Channels { get; }
+        private ChannelUserRelations ChannelUsers { get; }
         private SessionManager Sessions { get; }
         private IDataProvider DataProvider { get; }
+        private WelcomeMessage WelcomeMessage { get; }
 
-        public UserCommand(IRCServer server, Context context, UserManager users, SessionManager sessions, IDataProvider dataProvider) {
+        public UserCommand(
+            IRCServer server,
+            Context context,
+            UserManager users,
+            ChannelManager channels,
+            ChannelUserRelations channelUsers,
+            SessionManager sessions,
+            IDataProvider dataProvider,
+            WelcomeMessage welcomeMessage
+        ) {
             Server = server ?? throw new ArgumentNullException(nameof(server));
             Context = context ?? throw new ArgumentNullException(nameof(context));
             Users = users ?? throw new ArgumentNullException(nameof(users));
+            Channels = channels ?? throw new ArgumentNullException(nameof(channels));
+            ChannelUsers = channelUsers ?? throw new ArgumentNullException(nameof(channelUsers));
             Sessions = sessions ?? throw new ArgumentNullException(nameof(sessions));
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
+            WelcomeMessage = welcomeMessage ?? throw new ArgumentNullException(nameof(welcomeMessage));
         }
 
         public void HandleCommand(ClientCommandContext ctx) {
@@ -87,11 +102,10 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
                                     ctx.Connection.SendReply(new MyInfoReply(Server));
                                     ctx.Connection.SendReply(new ISupportReply(Server));
 
-                                    if(File.Exists(WELCOME)) {
+                                    if(WelcomeMessage.HasRandom) {
                                         ctx.Connection.SendReply(new MotdStartReply());
 
-                                        IEnumerable<string> lines = File.ReadAllLines(WELCOME).Where(x => !string.IsNullOrWhiteSpace(x));
-                                        string line = lines.ElementAtOrDefault(RNG.Next(lines.Count()));
+                                        string line = WelcomeMessage.GetRandomString();
                                         if(!string.IsNullOrWhiteSpace(line))
                                             ctx.Connection.SendReply(new MotdReply(line));
 
@@ -105,6 +119,11 @@ namespace SharpChat.Protocol.IRC.ClientCommands.RFC1459 {
                                     ctx.Connection.SendReply(new ListUserUnknownReply());
                                     ctx.Connection.SendReply(new ListUserChannelsReply());
                                     ctx.Connection.SendReply(new ListUserMeReply());
+
+                                    Channels.GetDefaultChannels(channels => {
+                                        foreach(IChannel channel in channels)
+                                            ChannelUsers.JoinChannel(channel, session);
+                                    });
                                 });
                             });
                         });

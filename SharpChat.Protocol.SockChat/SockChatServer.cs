@@ -1,4 +1,5 @@
-﻿using SharpChat.Events;
+﻿using SharpChat.Configuration;
+using SharpChat.Events;
 using SharpChat.Messages;
 using SharpChat.Protocol.SockChat.Commands;
 using SharpChat.Protocol.SockChat.PacketHandlers;
@@ -21,10 +22,18 @@ namespace SharpChat.Protocol.SockChat {
         private ConnectionList<SockChatConnection> Connections { get; }
         private IReadOnlyDictionary<ClientPacketId, IPacketHandler> PacketHandlers { get; }
 
-        private readonly object Sync = new object();
+        private CachedValue<string> WelcomeMessageValue { get; }
 
-        public SockChatServer(Context ctx) {
+        public string WelcomeMessage => WelcomeMessageValue;
+
+        public SockChatServer(Context ctx, IConfig config) {
             Context = ctx ?? throw new ArgumentNullException(nameof(ctx));
+
+            if(config == null)
+                throw new ArgumentNullException(nameof(config));
+
+            WelcomeMessageValue = config.ReadCached(@"welcome", string.Empty);
+
             Context.AddEventHandler(this);
 
             Connections = new ConnectionList<SockChatConnection>(Context.ChannelUsers);
@@ -35,7 +44,17 @@ namespace SharpChat.Protocol.SockChat {
             };
 
             addHandler(new PingPacketHandler(Context.Sessions));
-            addHandler(new AuthPacketHandler(Context.Sessions, Context.Users, Context.Channels, Context.ChannelUsers, Context.Messages, Context.DataProvider, Context.Bot));
+            addHandler(new AuthPacketHandler(
+                this,
+                Context.Sessions,
+                Context.Users,
+                Context.Channels,
+                Context.ChannelUsers,
+                Context.Messages,
+                Context.DataProvider,
+                Context.Bot,
+                Context.WelcomeMessage
+            ));
             addHandler(new MessageSendPacketHandler(Context.Users, Context.Channels, Context.ChannelUsers, Context.Messages, Context.Bot, new ICommand[] {
                 new JoinCommand(Context.Channels, Context.ChannelUsers, Context.Sessions),
                 new AFKCommand(Context.Users),

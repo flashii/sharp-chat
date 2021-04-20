@@ -9,6 +9,7 @@ namespace SharpChat.Channels {
         int MinimumRank { get; }
         bool AutoJoin { get; }
         uint MaxCapacity { get; }
+        int Order { get; }
         long OwnerId { get; }
 
         string Password { get; }

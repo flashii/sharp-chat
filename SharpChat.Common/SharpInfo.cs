@@ -8,6 +8,7 @@ namespace SharpChat {
         private const string UNKNOWN = @"???????";
 
         public static string VersionString { get; }
+        public static string VersionStringShort { get; }
         public static bool IsDebugBuild { get; }
 
         public static string ProgramName { get; }
@@ -21,19 +22,15 @@ namespace SharpChat {
                 using Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream(@"SharpChat.version.txt");
                 using StreamReader sr = new StreamReader(s);
                 VersionString = sr.ReadLine();
+                VersionStringShort = IsDebugBuild ? VersionString.Substring(0, 7) : VersionString;
             } catch {
-                VersionString = UNKNOWN;
+                VersionStringShort = VersionString = UNKNOWN;
             }
 
             StringBuilder sb = new StringBuilder();
             sb.Append(NAME);
             sb.Append('/');
-
-            if(IsDebugBuild)
-                sb.Append(VersionString.Substring(0, 7));
-            else
-                sb.Append(VersionString);
-
+            sb.Append(VersionStringShort);
             ProgramName = sb.ToString();
         }
     }

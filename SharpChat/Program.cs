@@ -33,11 +33,14 @@ namespace SharpChat {
             Console.WriteLine(@"  \__ \/ __ \/ __ `/ ___/ __ \/ /   / __ \/ __ `/ __/");
             Console.WriteLine(@" ___/ / / / / /_/ / /  / /_/ / /___/ / / / /_/ / /_  ");
             Console.WriteLine(@"/____/_/ /_/\__,_/_/  / .___/\____/_/ /_/\__,_/\__/  ");
-            Console.WriteLine(@"                     / _/            Sock Chat Server");
-
-#if DEBUG
-            Console.WriteLine(@"============================================ DEBUG ==");
-#endif
+            /**/Console.Write(@"                     / _/");
+            if(SharpInfo.IsDebugBuild) {
+                Console.WriteLine();
+                Console.Write(@"== ");
+                Console.Write(SharpInfo.VersionString);
+                Console.WriteLine(@" == DBG ==");
+            } else
+                Console.WriteLine(SharpInfo.VersionStringShort.PadLeft(28, ' '));
 
             string configFile = GetFlagArgument(args, @"--cfg") ?? CONFIG;
 

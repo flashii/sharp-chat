@@ -12,6 +12,7 @@ namespace SharpChat.Events {
         public string Password { get; }
         public bool AutoJoin { get; }
         public uint MaxCapacity { get; }
+        public int Order { get; }
 
         public ChannelCreateEvent(IChannel channel) : base(channel) {
             Name = channel.Name;
@@ -21,6 +22,7 @@ namespace SharpChat.Events {
             Password = channel.Password;
             AutoJoin = channel.AutoJoin;
             MaxCapacity = channel.MaxCapacity;
+            Order = channel.Order;
         }
     }
 }

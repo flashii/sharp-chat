@@ -27,6 +27,8 @@ namespace SharpChat {
         public IDataProvider DataProvider { get; }
         public RateLimiter RateLimiter { get; }
 
+        public WelcomeMessage WelcomeMessage { get; }
+
         public ChatBot Bot { get; } = new ChatBot(); 
 
         private Timer BumpTimer { get; }
@@ -55,6 +57,8 @@ namespace SharpChat {
             Channels = new ChannelManager(this, config, Bot);
             ChannelUsers = new ChannelUserRelations(this, Channels, Users, Sessions, Messages);
             RateLimiter = new RateLimiter(config.ScopeTo(@"flood"));
+
+            WelcomeMessage = new WelcomeMessage(config.ScopeTo(@"welcome"));
 
             AddEventHandler(Sessions);
             AddEventHandler(Users);

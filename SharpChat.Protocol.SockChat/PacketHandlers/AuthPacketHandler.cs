@@ -6,16 +6,13 @@ using SharpChat.Sessions;
 using SharpChat.Users;
 using SharpChat.Users.Auth;
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace SharpChat.Protocol.SockChat.PacketHandlers {
     public class AuthPacketHandler : IPacketHandler {
-        private const string WELCOME = @"welcome.txt";
-
         public ClientPacketId PacketId => ClientPacketId.Authenticate;
 
+        private SockChatServer Server { get; }
         private SessionManager Sessions { get; }
         private UserManager Users { get; }
         private ChannelManager Channels { get; }
@@ -23,16 +20,20 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
         private MessageManager Messages { get; }
         private IDataProvider DataProvider { get; }
         private IUser Sender { get; }
+        private WelcomeMessage WelcomeMessage { get; }
 
         public AuthPacketHandler(
+            SockChatServer server,
             SessionManager sessions,
             UserManager users,
             ChannelManager channels,
             ChannelUserRelations channelUsers,
             MessageManager messages,
             IDataProvider dataProvider,
-            IUser sender
+            IUser sender,
+            WelcomeMessage welcomeMessage
         ) {
+            Server = server ?? throw new ArgumentNullException(nameof(server));
             Sessions = sessions ?? throw new ArgumentNullException(nameof(sessions));
             Users = users ?? throw new ArgumentNullException(nameof(users));
             Channels = channels ?? throw new ArgumentNullException(nameof(channels));
@@ -40,6 +41,7 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
             Messages = messages ?? throw new ArgumentNullException(nameof(messages));
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
             Sender = sender ?? throw new ArgumentNullException(nameof(sender));
+            WelcomeMessage = welcomeMessage ?? throw new ArgumentNullException(nameof(welcomeMessage));
         }
 
         public void HandlePacket(PacketHandlerContext ctx) {
@@ -78,23 +80,29 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
                                 }
 
                                 Sessions.Create(ctx.Connection, user, session => {
-                                    ctx.Connection.SendPacket(new WelcomeMessagePacket(Sender, $@"Welcome to Flashii Chat, {user.UserName}!"));
+                                    string welcome = Server.WelcomeMessage;
+                                    if(!string.IsNullOrWhiteSpace(welcome))
+                                        ctx.Connection.SendPacket(new WelcomeMessagePacket(Sender, welcome.Replace(@"{username}", user.UserName)));
 
-                                    // TODO: this needs generalisation
-                                    if(File.Exists(WELCOME)) {
-                                        IEnumerable<string> lines = File.ReadAllLines(WELCOME).Where(x => !string.IsNullOrWhiteSpace(x));
-                                        string line = lines.ElementAtOrDefault(RNG.Next(lines.Count()));
-
+                                    if(WelcomeMessage.HasRandom) {
+                                        string line = WelcomeMessage.GetRandomString();
                                         if(!string.IsNullOrWhiteSpace(line))
                                             ctx.Connection.SendPacket(new WelcomeMessagePacket(Sender, line));
                                     }
 
-                                    IChannel chan = Channels.DefaultChannel;
-                                    ctx.Connection.LastChannel = chan;
-                                    ctx.Connection.SendPacket(new AuthSuccessPacket(user, chan, session, Messages.TextMaxLength));
+                                    Channels.GetDefaultChannels(channels => {
+                                        if(!channels.Any())
+                                            return; // what do, this is impossible
 
-                                    Channels.GetChannels(user.Rank, c => ctx.Connection.SendPacket(new ContextChannelsPacket(c)));
-                                    ChannelUsers.JoinChannel(chan, ctx.Session);
+                                        // other channels should be joined if MCHAN has been received
+                                        IChannel firstChan = channels.FirstOrDefault();
+
+                                        ctx.Connection.LastChannel = firstChan;
+                                        ctx.Connection.SendPacket(new AuthSuccessPacket(user, firstChan, session, Messages.TextMaxLength));
+
+                                        Channels.GetChannels(user.Rank, c => ctx.Connection.SendPacket(new ContextChannelsPacket(c)));
+                                        ChannelUsers.JoinChannel(firstChan, ctx.Session);
+                                    });
                                 });
                             });
                         });

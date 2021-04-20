@@ -15,6 +15,7 @@ namespace SharpChat.Events {
         public string Password { get; }
         public bool? AutoJoin { get; }
         public uint? MaxCapacity { get; }
+        public int? Order { get; }
 
         public bool HasName => Name != null;
         public bool HasTopic => Topic != null;
@@ -23,13 +24,14 @@ namespace SharpChat.Events {
         public ChannelUpdateEvent(
             IChannel channel,
             IUser owner,
-            string name = null,
-            string topic = null,
-            bool? temp = null,
-            int? minRank = null,
-            string password = null,
-            bool? autoJoin = null,
-            uint? maxCapacity = null
+            string name,
+            string topic,
+            bool? temp,
+            int? minRank,
+            string password,
+            bool? autoJoin,
+            uint? maxCapacity,
+            int? order
         ) : base(owner, channel ?? throw new ArgumentNullException(nameof(channel))) {
             PreviousName = channel.Name;
             Name = name;
@@ -39,6 +41,7 @@ namespace SharpChat.Events {
             Password = password;
             AutoJoin = autoJoin;
             MaxCapacity = maxCapacity;
+            Order = order;
         }
     }
 }
