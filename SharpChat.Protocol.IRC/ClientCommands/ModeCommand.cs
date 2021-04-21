@@ -1,6 +1,7 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Protocol.IRC.Channels;
 using SharpChat.Protocol.IRC.Replies;
+using SharpChat.Protocol.IRC.ServerCommands;
 using SharpChat.Protocol.IRC.Sessions;
 using SharpChat.Sessions;
 using SharpChat.Users;
@@ -34,7 +35,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands {
                 return;
             }
 
-            if(ctx.Arguments.Count() < 2) {
+            if(!ctx.Arguments.Any()) {
                 ctx.Connection.SendReply(new NeedMoreParamsReply(NAME));
                 return;
             }
@@ -43,6 +44,11 @@ namespace SharpChat.Protocol.IRC.ClientCommands {
                 Channels.GetChannelByIRCName(targetName, channel => {
                     if(channel == null) {
                         ctx.Connection.SendReply(new NoSuchChannelReply(targetName));
+                        return;
+                    }
+
+                    if(ctx.Arguments.Count() == 1) {
+                        //ctx.Connection.SendCommand(new ServerModeCommand(channel));
                         return;
                     }
 
@@ -57,6 +63,11 @@ namespace SharpChat.Protocol.IRC.ClientCommands {
                         return;
                     }
 
+                    if(ctx.Arguments.Count() == 1) {
+                        //Sessions.CheckIRCSecure(user, isSecure => ctx.Connection.SendCommand(new ServerModeCommand(user, isSecure)));
+                        return;
+                    }
+
                     if(!user.Equals(ctx.User)) {
                         // admin check probably
                         ctx.Connection.SendReply(new UsersDoNotMatchReply());
@@ -68,44 +79,43 @@ namespace SharpChat.Protocol.IRC.ClientCommands {
         }
 
         private void HandleChannel(ClientCommandContext ctx, IChannel channel) {
-            // TODO: CHANNEL MODES
+            Queue<string> args = new Queue<string>(ctx.Arguments);
+
+            while(args.TryDequeue(out string arg)) {
+                //
+            }
         }
 
         private void HandleUser(ClientCommandContext ctx, IUser user) {
             HashSet<char> processed = new HashSet<char>();
 
-            foreach(string modeSet in ctx.Arguments.Skip(1)) {
-                if(modeSet.Length < 2)
+            string modeSet = ctx.Arguments.FirstOrDefault();
+            if(modeSet.Length < 2)
+                return;
+
+            Queue<char> chars = new Queue<char>(modeSet.ToArray());
+
+            char mode = chars.Dequeue();
+            if(mode != '+' && mode != '-')
+                return;
+
+            bool set = mode == '+';
+
+            while(chars.TryDequeue(out mode)) {
+                if(processed.Contains(mode))
                     continue;
+                processed.Add(mode);
 
-                Queue<char> chars = new Queue<char>(modeSet.ToArray());
+                switch(mode) {
+                    case 'i': // Invisible (appear offline)
+                        Users.Update(user, status: set ? UserStatus.Offline : UserStatus.Online);
+                        break;
 
-                char mode = chars.Dequeue();
-                if(mode != '+' && mode != '-')
-                    continue;
-
-                bool set = mode == '+';
-
-                while(chars.TryDequeue(out mode)) {
-                    if(processed.Contains(mode))
-                        continue;
-                    processed.Add(mode);
-
-                    switch(mode) {
-                        case 'i': // Invisible (appear offline)
-                            Users.Update(user, status: set ? UserStatus.Offline : UserStatus.Online);
-                            break;
-
-                        default:
-                            ctx.Connection.SendReply(new UserModeUnknownFlagReply());
-                            chars.Clear();
-                            processed = null;
-                            break;
-                    }
+                    default:
+                        ctx.Connection.SendReply(new UserModeUnknownFlagReply());
+                        chars.Clear();
+                        return;
                 }
-
-                if(processed == null)
-                    break;
             }
 
             Sessions.CheckIRCSecure(user, isSecure => ctx.Connection.SendReply(new UserModeIsReply(user, isSecure)));

@@ -17,7 +17,7 @@ namespace SharpChat.Protocol.IRC.Replies {
         }
 
         protected override string BuildLine() {
-            return User.GetIRCModeString(IsSecure);
+            return '+' + User.GetIRCModeString(IsSecure);
         }
     }
 }
