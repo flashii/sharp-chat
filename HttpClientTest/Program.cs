@@ -1,7 +1,5 @@
 ﻿using Hamakaze;
 using System;
-using System.IO;
-using System.Text;
 using System.Threading;
 using static System.Console;
 
@@ -61,8 +59,6 @@ namespace HttpClientTest {
 
             return;*/
 
-            HttpRequestMessage req = new HttpRequestMessage(HttpRequestMessage.GET, @"https://mii.flashii.net/metadata?url=https://twitter.com/smugwave/status/527973842137141249");
-
             static void setForeground(ConsoleColor color) {
                 ResetColor();
                 ForegroundColor = color;
@@ -70,66 +66,79 @@ namespace HttpClientTest {
 
             using ManualResetEvent mre = new ManualResetEvent(false);
             bool kill = false;
+            string[] urls = {
+                @"https://flashii.net/",
+                @"https://flashii.net/changelog",
+                @"https://abyss.flash.moe/",
+                @"https://flashii.net/info/contact",
+                @"https://flashii.net/news/",
+                @"https://flash.moe/",
+                @"https://flashii.net/forum/",
+            };
 
-            HttpClient.Send(
-                req,
-                onComplete: (task, res) => {
-                    WriteLine($@"Connection: {req.Connection}");
-                    WriteLine($@"AcceptEncodings: {string.Join(@", ", req.AcceptedEncodings)}");
-                    WriteLine($@"IsSecure: {req.IsSecure}");
-                    WriteLine($@"RequestTarget: {req.RequestTarget}");
-                    WriteLine($@"UserAgent: {req.UserAgent}");
-                    WriteLine($@"ContentType: {req.ContentType}");
-                    WriteLine();
+            foreach(string url in urls) {
+                // routine lifted out of satori
+                string paramUrl = Uri.EscapeDataString(url);
+                HttpClient.Send(
+                    new HttpRequestMessage(HttpRequestMessage.GET, $@"https://mii.flashii.net/metadata?url={paramUrl}"),
+                    onComplete: (task, res) => {
+                        WriteLine($@"Connection: {task.Request.Connection}");
+                        WriteLine($@"AcceptEncodings: {string.Join(@", ", task.Request.AcceptedEncodings)}");
+                        WriteLine($@"IsSecure: {task.Request.IsSecure}");
+                        WriteLine($@"RequestTarget: {task.Request.RequestTarget}");
+                        WriteLine($@"UserAgent: {task.Request.UserAgent}");
+                        WriteLine($@"ContentType: {task.Request.ContentType}");
+                        WriteLine();
 
-                    setForeground(ConsoleColor.Green);
+                        setForeground(ConsoleColor.Green);
 
-                    WriteLine($@"Connection: {res.StatusCode}");
-                    WriteLine($@"Connection: {res.StatusMessage}");
-                    WriteLine($@"Connection: {res.Connection}");
-                    WriteLine($@"ContentEncodings: {string.Join(@", ", res.ContentEncodings)}");
-                    WriteLine($@"TransferEncodings: {string.Join(@", ", res.TransferEncodings)}");
-                    WriteLine($@"Date: {res.Date}");
-                    WriteLine($@"Server: {res.Server}");
-                    WriteLine($@"ContentType: {res.ContentType}");
-                    WriteLine();
+                        WriteLine($@"Connection: {res.StatusCode}");
+                        WriteLine($@"Connection: {res.StatusMessage}");
+                        WriteLine($@"Connection: {res.Connection}");
+                        WriteLine($@"ContentEncodings: {string.Join(@", ", res.ContentEncodings)}");
+                        WriteLine($@"TransferEncodings: {string.Join(@", ", res.TransferEncodings)}");
+                        WriteLine($@"Date: {res.Date}");
+                        WriteLine($@"Server: {res.Server}");
+                        WriteLine($@"ContentType: {res.ContentType}");
+                        WriteLine();
 
-                    if(res.HasBody) {
-                        string line;
-                        using StreamWriter sw = new StreamWriter(@"out.html", false, new UTF8Encoding(false));
-                        using StreamReader sr = new StreamReader(res.Body, new UTF8Encoding(false), false, leaveOpen: true);
-                        while((line = sr.ReadLine()) != null) {
-                            //Logger.Debug(line);
-                            sw.WriteLine(line);
+                        /*if(res.HasBody) {
+                            string line;
+                            using StreamWriter sw = new StreamWriter(@"out.html", false, new UTF8Encoding(false));
+                            using StreamReader sr = new StreamReader(res.Body, new UTF8Encoding(false), false, leaveOpen: true);
+                            while((line = sr.ReadLine()) != null) {
+                                //Logger.Debug(line);
+                                sw.WriteLine(line);
+                            }
+                        }*/
+                    },
+                    onError: (task, ex) => {
+                        setForeground(ConsoleColor.Red);
+                        WriteLine(ex);
+                    },
+                    onCancel: task => {
+                        setForeground(ConsoleColor.Yellow);
+                        WriteLine(@"Cancelled.");
+                    },
+                    onDownloadProgress: (task, p, t) => {
+                        setForeground(ConsoleColor.Blue);
+                        WriteLine($@"Downloaded {p} bytes of {t} bytes.");
+                    },
+                    onUploadProgress: (task, p, t) => {
+                        setForeground(ConsoleColor.Magenta);
+                        WriteLine($@"Uploaded {p} bytes of {t} bytes.");
+                    },
+                    onStateChange: (task, s) => {
+                        setForeground(ConsoleColor.White);
+                        WriteLine($@"State changed: {s}");
+
+                        if(!kill && (task.IsFinished || task.IsCancelled)) {
+                            kill = true;
+                            mre?.Set();
                         }
                     }
-                },
-                onError: (task, ex) => {
-                    setForeground(ConsoleColor.Red);
-                    WriteLine(ex);
-                },
-                onCancel: task => {
-                    setForeground(ConsoleColor.Yellow);
-                    WriteLine(@"Cancelled.");
-                },
-                onDownloadProgress: (task, p, t) => {
-                    setForeground(ConsoleColor.Blue);
-                    WriteLine($@"Downloaded {p} bytes of {t} bytes.");
-                },
-                onUploadProgress: (task, p, t) => {
-                    setForeground(ConsoleColor.Magenta);
-                    WriteLine($@"Uploaded {p} bytes of {t} bytes.");
-                },
-                onStateChange: (task, s) => {
-                    setForeground(ConsoleColor.White);
-                    WriteLine($@"State changed: {s}");
-
-                    if(!kill && (task.IsFinished || task.IsCancelled)) {
-                        kill = true;
-                        mre?.Set();
-                    }
-                }
-            );
+                );
+            }
 
             mre.WaitOne();
             ResetColor();
