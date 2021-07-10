@@ -121,7 +121,7 @@ namespace Hamakaze {
             try {
                 foreach(IPAddress addr in Addresses) {
                     int tries = 0;
-                    IPEndPoint endPoint = new IPEndPoint(addr, Request.Port);
+                    IPEndPoint endPoint = new(addr, Request.Port);
 
                     exception = null;
                     Connection = Connections.GetConnection(Request.Host, endPoint, Request.IsSecure);

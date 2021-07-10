@@ -71,7 +71,7 @@ namespace SharpChat {
             IDatabaseBackend databaseBackend = new ObjectConstructor<IDatabaseBackend, DatabaseBackendAttribute, NullDatabaseBackend>()
                 .Construct(databaseBackendName, databaseArgument);
 
-            using HttpClient httpClient = new HttpClient {
+            using HttpClient httpClient = new() {
                 DefaultUserAgent = @"SharpChat/1.0",
             };
 
@@ -83,12 +83,12 @@ namespace SharpChat {
             if(string.IsNullOrEmpty(portArg) || !ushort.TryParse(portArg, out ushort port))
                 port = DEFAULT_PORT;
 
-            ObjectConstructor<IServer, ServerAttribute, NullServer> serverConstructor = new ObjectConstructor<IServer, ServerAttribute, NullServer>();
+            ObjectConstructor<IServer, ServerAttribute, NullServer> serverConstructor = new();
 
             Logger.Write(@"Creating context...");
-            using Context ctx = new Context(config.ScopeTo(@"chat"), databaseBackend, dataProvider);
+            using Context ctx = new(config.ScopeTo(@"chat"), databaseBackend, dataProvider);
 
-            List<IServer> servers = new List<IServer>();
+            List<IServer> servers = new();
 
             // Crusty temporary solution, just want to have the variable constructor arguments for servers in place already
 
@@ -110,7 +110,7 @@ namespace SharpChat {
                     server.Listen(new IPEndPoint(IPAddress.Any, 6667));
             }
 
-            using ManualResetEvent mre = new ManualResetEvent(false);
+            using ManualResetEvent mre = new(false);
             Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
             mre.WaitOne();
 
@@ -128,7 +128,7 @@ namespace SharpChat {
             s.SetLength(0);
             s.Flush();
 
-            using StreamWriter sw = new StreamWriter(s, new UTF8Encoding(false));
+            using StreamWriter sw = new(s, new UTF8Encoding(false));
 
             sw.WriteLine(@"# and ; can be used at the start of a line for comments.");
             sw.WriteLine();

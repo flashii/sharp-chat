@@ -20,14 +20,14 @@ namespace SharpChat {
 
             try {
                 using Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream(@"SharpChat.version.txt");
-                using StreamReader sr = new StreamReader(s);
+                using StreamReader sr = new(s);
                 VersionString = sr.ReadLine();
                 VersionStringShort = IsDebugBuild ? VersionString.Substring(0, 7) : VersionString;
             } catch {
                 VersionStringShort = VersionString = UNKNOWN;
             }
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             sb.Append(NAME);
             sb.Append('/');
             sb.Append(VersionStringShort);

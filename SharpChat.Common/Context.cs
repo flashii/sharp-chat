@@ -45,15 +45,15 @@ namespace SharpChat {
             ServerId = RNG.NextString(ID_LENGTH); // maybe read this from the cfg instead
             Created = DateTimeOffset.Now; // read this from config definitely
 
-            DatabaseWrapper db = new DatabaseWrapper(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
+            DatabaseWrapper db = new(databaseBackend ?? throw new ArgumentNullException(nameof(databaseBackend)));
             IMessageStorage msgStore = db.IsNullBackend
                 ? new MemoryMessageStorage()
                 : new ADOMessageStorage(db);
 
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
+            Users = new UserManager(this);
             Sessions = new SessionManager(this, Users, config.ScopeTo(@"sessions"), ServerId);
             Messages = new MessageManager(this, msgStore, config.ScopeTo(@"messages"));
-            Users = new UserManager(this);
             Channels = new ChannelManager(this, config, Bot);
             ChannelUsers = new ChannelUserRelations(this, Channels, Users, Sessions, Messages);
             RateLimiter = new RateLimiter(config.ScopeTo(@"flood"));

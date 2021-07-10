@@ -31,8 +31,7 @@ namespace Hamakaze {
             EndPoint = endPoint ?? throw new ArgumentNullException(nameof(endPoint));
             IsSecure = secure;
 
-            if(endPoint.AddressFamily != AddressFamily.InterNetwork
-                && endPoint.AddressFamily != AddressFamily.InterNetworkV6)
+            if(endPoint.AddressFamily is not AddressFamily.InterNetwork and not AddressFamily.InterNetworkV6)
                 throw new ArgumentException(@"Address must be an IPv4 or IPv6 address.", nameof(endPoint));
 
             Socket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp) {
@@ -58,9 +57,7 @@ namespace Hamakaze {
         }
 
         public bool Acquire() {
-            if(InUse)
-                return false;
-            return InUse = true;
+            return !InUse && (InUse = true);
         }
 
         public void Release() {

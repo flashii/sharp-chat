@@ -845,6 +845,14 @@ Added in Version 2.
 </table>
 
 
+### Packet `13`: Server Switch
+Informs the client that it should connect to a different server.
+
+Added in Version 2.
+
+Packet data tbd.
+
+
 ## Capabilities
 Capability strings sent in Client Packet `3` and Server Packet `11`.
 If you wish to add your own unofficial capabilities please prefix them with `X_` to avoid conflicts.

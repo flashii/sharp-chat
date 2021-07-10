@@ -29,7 +29,18 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Protocols", "Protocols", "{
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat.Protocol.SockChat", "SharpChat.Protocol.SockChat\SharpChat.Protocol.SockChat.csproj", "{33EA7582-B493-4E82-94AD-FDEA5E42AFD1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpChat.Protocol.IRC", "SharpChat.Protocol.IRC\SharpChat.Protocol.IRC.csproj", "{A376597C-B357-4072-96F7-9A6230EE4A23}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SharpChat.Protocol.IRC", "SharpChat.Protocol.IRC\SharpChat.Protocol.IRC.csproj", "{A376597C-B357-4072-96F7-9A6230EE4A23}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{60E17F79-4B06-4ED7-905B-59B2D6B6F763}"
+	ProjectSection(SolutionItems) = preProject
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		LICENSE = LICENSE
+		Protocol-draft.md = Protocol-draft.md
+		Protocol.md = Protocol.md
+		README.md = README.md
+		start.sh = start.sh
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

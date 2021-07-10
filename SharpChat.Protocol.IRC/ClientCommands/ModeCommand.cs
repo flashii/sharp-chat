@@ -79,7 +79,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands {
         }
 
         private void HandleChannel(ClientCommandContext ctx, IChannel channel) {
-            Queue<string> args = new Queue<string>(ctx.Arguments);
+            Queue<string> args = new(ctx.Arguments);
 
             while(args.TryDequeue(out string arg)) {
                 //
@@ -87,16 +87,16 @@ namespace SharpChat.Protocol.IRC.ClientCommands {
         }
 
         private void HandleUser(ClientCommandContext ctx, IUser user) {
-            HashSet<char> processed = new HashSet<char>();
+            HashSet<char> processed = new();
 
             string modeSet = ctx.Arguments.FirstOrDefault();
             if(modeSet.Length < 2)
                 return;
 
-            Queue<char> chars = new Queue<char>(modeSet.ToArray());
+            Queue<char> chars = new(modeSet.ToArray());
 
             char mode = chars.Dequeue();
-            if(mode != '+' && mode != '-')
+            if(mode is not '+' and not '-')
                 return;
 
             bool set = mode == '+';

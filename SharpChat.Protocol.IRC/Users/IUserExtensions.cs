@@ -9,7 +9,7 @@ using System.Text;
 namespace SharpChat.Protocol.IRC.Users {
     public static class IUserExtensions {
         public static string GetIRCName(this IUser user, IChannel channel = null) {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             // SharpChat does not implement per-channel permissions besides owner
             // if it did an IMember should exist
@@ -44,7 +44,7 @@ namespace SharpChat.Protocol.IRC.Users {
         }
 
         public static string GetIRCModeString(this IUser user, bool isSecure = false) {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             // see GetIRCName for rank based modes
 
@@ -63,13 +63,13 @@ namespace SharpChat.Protocol.IRC.Users {
             if(user.Status == UserStatus.Offline)
                 sb.Append('i'); // invisible
 
-            if(user.Rank < 10 && user.Rank >= 5)
+            if(user.Rank is < 10 and >= 5)
                 sb.Append('o'); // global mod
 
             sb.Append('w'); // wallops
             sb.Append('x'); // host hiding
 
-            if(sessions != null && sessions.Any() && sessions.All(s => s.IsSecure))
+            if(isSecure)
                 sb.Append('z'); // secure
 
             return sb.ToString();

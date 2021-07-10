@@ -12,13 +12,14 @@ namespace SharpChat.Protocol.SockChat {
 
         public string ConnectionId { get; }
         public IPAddress RemoteAddress { get; }
+        public bool IsSecure { get; }
 
         public bool IsAvailable => Connection.IsAvailable;
 
         public ClientCapability Capabilities { get; set; }
 
         private IWebSocketConnection Connection { get; }
-        private readonly object Sync = new object();
+        private readonly object Sync = new();
 
         public IChannel LastChannel { get; set; }
 

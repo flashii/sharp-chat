@@ -157,7 +157,7 @@ namespace Hamakaze {
         }
 
         public void WriteTo(Stream stream, Action<long, long> onProgress = null) {
-            using(StreamWriter sw = new StreamWriter(stream, new ASCIIEncoding(), leaveOpen: true)) {
+            using(StreamWriter sw = new(stream, new ASCIIEncoding(), leaveOpen: true)) {
                 sw.NewLine = "\r\n";
                 sw.Write(Method);
                 sw.Write(' ');

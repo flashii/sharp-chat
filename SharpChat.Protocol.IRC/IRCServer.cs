@@ -48,7 +48,7 @@ namespace SharpChat.Protocol.IRC {
             ServerHostValue = Config.ReadCached(@"host", @"irc.example.com");
             NetworkNameValue = Config.ReadCached(@"network", @"SharpChat");
 
-            Dictionary<string, IClientCommand> handlers = new Dictionary<string, IClientCommand>();
+            Dictionary<string, IClientCommand> handlers = new();
             void addHandler(IClientCommand handler) {
                 handlers.Add(handler.CommandName, handler);
             };
@@ -140,7 +140,7 @@ namespace SharpChat.Protocol.IRC {
                         // check pings
 
                         Connections.GetDeadConnections(conns => {
-                            Queue<IRCConnection> dead = new Queue<IRCConnection>(conns);
+                            Queue<IRCConnection> dead = new(conns);
                             while(dead.TryDequeue(out IRCConnection conn)) {
                                 Connections.RemoveConnection(conn);
                                 Context.Sessions.Destroy(conn);
@@ -156,7 +156,7 @@ namespace SharpChat.Protocol.IRC {
             // do rate limiting
 
             string commandName = null;
-            List<string> args = new List<string>();
+            List<string> args = new();
 
             try {
                 int i = 0;
@@ -227,7 +227,7 @@ namespace SharpChat.Protocol.IRC {
                             return;
 
                         Context.Users.GetUser(mce.UserId, user => {
-                            Queue<ServerPrivateMessageCommand> msgs = new Queue<ServerPrivateMessageCommand>(ServerPrivateMessageCommand.Split(channel, user, mce.Text));
+                            Queue<ServerPrivateMessageCommand> msgs = new(ServerPrivateMessageCommand.Split(channel, user, mce.Text));
                             Connections.GetConnections(channel, conns => {
                                 conns = conns.Where(c => !mce.ConnectionId.Equals(c.ConnectionId));
                                 while(msgs.TryDequeue(out ServerPrivateMessageCommand spmc))
@@ -254,7 +254,7 @@ namespace SharpChat.Protocol.IRC {
                             if(user == null)
                                 return;
 
-                            ServerJoinCommand sjc = new ServerJoinCommand(channel, user);
+                            ServerJoinCommand sjc = new(channel, user);
                             Connections.GetConnections(channel, conns => {
                                 conns = conns.Where(c => !user.Equals(c.Session?.User));
                                 foreach(IRCConnection conn in conns)
@@ -288,7 +288,7 @@ namespace SharpChat.Protocol.IRC {
                             if(user == null)
                                 return;
 
-                            ServerPartCommand spc = new ServerPartCommand(channel, user, cule.Reason);
+                            ServerPartCommand spc = new(channel, user, cule.Reason);
                             Connections.GetConnections(channel, conns => {
                                 foreach(IRCConnection conn in conns)
                                     conn.SendCommand(spc);

@@ -13,7 +13,7 @@ namespace SharpChat.Sessions {
         public const short DEFAULT_MAX_COUNT = 5;
         public const ushort DEFAULT_TIMEOUT = 5;
 
-        private readonly object Sync = new object();
+        private readonly object Sync = new();
 
         private CachedValue<short> MaxPerUser { get; } 
         private CachedValue<ushort> TimeOut { get; }
@@ -331,7 +331,7 @@ namespace SharpChat.Sessions {
                 if(sessions?.Any() != true)
                     return;
 
-                Queue<ISession> murder = new Queue<ISession>(sessions);
+                Queue<ISession> murder = new(sessions);
                 while(murder.TryDequeue(out ISession session))
                     Destroy(session);
             });

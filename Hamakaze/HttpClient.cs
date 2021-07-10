@@ -49,7 +49,7 @@ namespace Hamakaze {
                 request.AcceptedEncodings = AcceptedEncodings;
             request.Connection = ReuseConnections ? HttpConnectionHeader.KEEP_ALIVE : HttpConnectionHeader.CLOSE;
 
-            HttpTask task = new HttpTask(Connections, request, disposeRequest, disposeResponse);
+            HttpTask task = new(Connections, request, disposeRequest, disposeResponse);
 
             if(onComplete != null)
                 task.OnComplete += onComplete;

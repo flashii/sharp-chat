@@ -64,7 +64,7 @@ namespace HttpClientTest {
                 ForegroundColor = color;
             }
 
-            using ManualResetEvent mre = new ManualResetEvent(false);
+            using ManualResetEvent mre = new(false);
             bool kill = false;
             string[] urls = {
                 @"https://flashii.net/",

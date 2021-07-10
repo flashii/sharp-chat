@@ -52,7 +52,7 @@ namespace Hamakaze {
                 return null;
             if(Body is MemoryStream msBody)
                 return msBody.ToArray();
-            using MemoryStream ms = new MemoryStream();
+            using MemoryStream ms = new();
             if(Body.CanSeek)
                 Body.Seek(0, SeekOrigin.Begin);
             Body.CopyTo(ms);
@@ -61,14 +61,14 @@ namespace Hamakaze {
 
         public string GetBodyString() {
             byte[] bytes = GetBodyBytes();
-            if(bytes == null || bytes.Length < 1)
-                return string.Empty;
-            return ResponseEncoding.GetString(bytes);
+            return bytes == null || bytes.Length < 1
+                ? string.Empty
+                : ResponseEncoding.GetString(bytes);
         }
 
         // there's probably a less stupid way to do this, be my guest and call me an idiot
         private static void ProcessEncoding(Stack<string> encodings, Stream stream, bool transfer) {
-            using MemoryStream temp = new MemoryStream();
+            using MemoryStream temp = new();
             bool inTemp = false;
 
             while(encodings.TryPop(out string encoding)) {
@@ -81,19 +81,19 @@ namespace Hamakaze {
                 switch(encoding) {
                     case HttpEncoding.GZIP:
                     case HttpEncoding.XGZIP:
-                        using(GZipStream gzs = new GZipStream(source, CompressionMode.Decompress, true))
+                        using(GZipStream gzs = new(source, CompressionMode.Decompress, true))
                             gzs.CopyTo(target);
                         break;
 
                     case HttpEncoding.DEFLATE:
-                        using(DeflateStream def = new DeflateStream(source, CompressionMode.Decompress, true))
+                        using(DeflateStream def = new(source, CompressionMode.Decompress, true))
                             def.CopyTo(target);
                         break;
 
                     case HttpEncoding.BROTLI:
                         if(transfer)
                             goto default;
-                        using(BrotliStream br = new BrotliStream(source, CompressionMode.Decompress, true))
+                        using(BrotliStream br = new(source, CompressionMode.Decompress, true))
                             br.CopyTo(target);
                         break;
 
@@ -121,7 +121,7 @@ namespace Hamakaze {
             // ignore this function, it doesn't exist
             string readLine() {
                 const ushort crlf = 0x0D0A;
-                using MemoryStream ms = new MemoryStream();
+                using MemoryStream ms = new();
                 int byt; ushort lastTwo = 0;
 
                 for(; ; ) {
@@ -159,7 +159,7 @@ namespace Hamakaze {
             string statusMessage = parts.ElementAtOrDefault(2);
 
             // Read header key-value pairs
-            List<HttpHeader> headers = new List<HttpHeader>();
+            List<HttpHeader> headers = new();
 
             while((line = readLine()) != null) {
                 if(string.IsNullOrWhiteSpace(line))
@@ -186,7 +186,7 @@ namespace Hamakaze {
                 headers.Add(header);
             }
 
-            if(statusCode < 200 || statusCode == 201 || statusCode == 204 || statusCode == 205)
+            if(statusCode is < 200 or 201 or 204 or 205)
                 contentLength = 0;
 
             Stream body = null;

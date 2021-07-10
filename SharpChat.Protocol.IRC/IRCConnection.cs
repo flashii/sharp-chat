@@ -14,11 +14,12 @@ namespace SharpChat.Protocol.IRC {
 
         public string ConnectionId { get; }
         public IPAddress RemoteAddress { get; }
+        public bool IsSecure { get; }
 
         public bool IsAvailable => Socket.Connected;
 
         public Socket Socket { get; }
-        private readonly object Sync = new object();
+        private readonly object Sync = new();
 
         public bool IsAuthenticating { get; set; }
         public bool HasAuthenticated { get; set; }
@@ -38,7 +39,7 @@ namespace SharpChat.Protocol.IRC {
         }
 
         public void SendCommand(IServerCommand command) {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             // Sender
             sb.Append(IRCServer.PREFIX);
@@ -64,7 +65,7 @@ namespace SharpChat.Protocol.IRC {
         }
 
         public void SendReply(IReply reply) {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             // Server
             sb.Append(IRCServer.PREFIX);
