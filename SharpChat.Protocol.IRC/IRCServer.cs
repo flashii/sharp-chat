@@ -43,7 +43,7 @@ namespace SharpChat.Protocol.IRC {
 
             Connections = new IRCConnectionList(Context.ChannelUsers);
 
-            Context.AddEventHandler(this);
+            Context.Events.AddEventHandler(this);
 
             ServerHostValue = Config.ReadCached(@"host", @"irc.example.com");
             NetworkNameValue = Config.ReadCached(@"network", @"SharpChat");
@@ -325,7 +325,7 @@ namespace SharpChat.Protocol.IRC {
             if(IsDisposed)
                 return;
             IsDisposed = true;
-            Context.RemoveEventHandler(this);
+            Context.Events.RemoveEventHandler(this);
 
             IsRunning = false;
 

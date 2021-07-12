@@ -34,7 +34,7 @@ namespace SharpChat.Protocol.SockChat {
 
             WelcomeMessageValue = config.ReadCached(@"welcome", string.Empty);
 
-            Context.AddEventHandler(this);
+            Context.Events.AddEventHandler(this);
 
             Connections = new ConnectionList<SockChatConnection>(Context.ChannelUsers);
 
@@ -82,7 +82,6 @@ namespace SharpChat.Protocol.SockChat {
             addHandler(new TypingPacketHandler());
 
             PacketHandlers = handlers;
-
         }
 
         public void Listen(EndPoint endPoint) {
@@ -317,7 +316,7 @@ namespace SharpChat.Protocol.SockChat {
             if(IsDisposed)
                 return;
             IsDisposed = true;
-            Context.RemoveEventHandler(this);
+            Context.Events.RemoveEventHandler(this);
             Server?.Dispose();
         }
     }

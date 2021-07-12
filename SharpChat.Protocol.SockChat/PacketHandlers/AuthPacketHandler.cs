@@ -101,7 +101,7 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
                                         ctx.Connection.SendPacket(new AuthSuccessPacket(user, firstChan, session, Messages.TextMaxLength));
 
                                         Channels.GetChannels(user.Rank, c => ctx.Connection.SendPacket(new ContextChannelsPacket(c)));
-                                        ChannelUsers.JoinChannel(firstChan, ctx.Session);
+                                        ChannelUsers.JoinChannel(firstChan, session);
                                     });
                                 });
                             });

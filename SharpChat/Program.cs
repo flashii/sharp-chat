@@ -83,44 +83,48 @@ namespace SharpChat {
             if(string.IsNullOrEmpty(portArg) || !ushort.TryParse(portArg, out ushort port))
                 port = DEFAULT_PORT;
 
+            Win32.IncreaseThreadPrecision();
+
             ObjectConstructor<IServer, ServerAttribute, NullServer> serverConstructor = new();
 
             Logger.Write(@"Creating context...");
-            using Context ctx = new(config.ScopeTo(@"chat"), databaseBackend, dataProvider);
+            using(Context ctx = new(config.ScopeTo(@"chat"), databaseBackend, dataProvider)) {
+                List<IServer> servers = new();
 
-            List<IServer> servers = new();
+                // Crusty temporary solution, just want to have the variable constructor arguments for servers in place already
 
-            // Crusty temporary solution, just want to have the variable constructor arguments for servers in place already
-
-            string[] serverNames = new[] {
-                @"sockchat",
+                string[] serverNames = new[] {
+                    @"sockchat",
 #if DEBUG
-                @"irc",
+                    @"irc",
 #endif
-            };
+                };
 
-            foreach(string serverName in serverNames) {
-                Logger.Write($@"Starting {serverName} server...");
-                IServer server = serverConstructor.Construct(serverName, ctx, config.ScopeTo(serverName));
-                servers.Add(server);
+                foreach(string serverName in serverNames) {
+                    Logger.Write($@"Starting {serverName} server...");
+                    IServer server = serverConstructor.Construct(serverName, ctx, config.ScopeTo(serverName));
+                    servers.Add(server);
 
-                if(server is SockChatServer)
-                    server.Listen(new IPEndPoint(IPAddress.Any, port));
-                else if(server is IRCServer)
-                    server.Listen(new IPEndPoint(IPAddress.Any, 6667));
+                    if(server is SockChatServer)
+                        server.Listen(new IPEndPoint(IPAddress.Any, port));
+                    else if(server is IRCServer)
+                        server.Listen(new IPEndPoint(IPAddress.Any, 6667));
+                }
+
+                using ManualResetEvent mre = new(false);
+                Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
+                mre.WaitOne();
+
+                foreach(IServer server in servers)
+                    server.Dispose();
+
+                if(dataProvider is IDisposable dpd)
+                    dpd.Dispose();
+                if(databaseBackend is IDisposable dbd)
+                    dbd.Dispose();
             }
 
-            using ManualResetEvent mre = new(false);
-            Console.CancelKeyPress += (s, e) => { e.Cancel = true; mre.Set(); };
-            mre.WaitOne();
-
-            foreach(IServer server in servers)
-                server.Dispose();
-
-            if(dataProvider is IDisposable dpd)
-                dpd.Dispose();
-            if(databaseBackend is IDisposable dbd)
-                dbd.Dispose();
+            Win32.RestoreThreadPrecision();
         }
 
         private static void ConvertConfiguration() {

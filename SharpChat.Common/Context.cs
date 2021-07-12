@@ -14,10 +14,11 @@ using System.Linq;
 using System.Threading;
 
 namespace SharpChat {
-    public class Context : IDisposable, IEventDispatcher {
+    public class Context : IDisposable {
         public const int ID_LENGTH = 8;
         public string ServerId { get; }
 
+        public EventDispatcher Events { get; }
         public SessionManager Sessions { get; }
         public UserManager Users { get; }
         public ChannelManager Channels { get; }
@@ -32,9 +33,6 @@ namespace SharpChat {
         public ChatBot Bot { get; } = new(); 
 
         private Timer BumpTimer { get; }
-        private readonly object Sync = new();
-
-        private List<IEventHandler> EventHandlers { get; } = new();
 
         public DateTimeOffset Created { get; }
 
@@ -50,21 +48,29 @@ namespace SharpChat {
                 ? new MemoryMessageStorage()
                 : new ADOMessageStorage(db);
 
+            Events = new EventDispatcher();
             DataProvider = dataProvider ?? throw new ArgumentNullException(nameof(dataProvider));
-            Users = new UserManager(this);
-            Sessions = new SessionManager(this, Users, config.ScopeTo(@"sessions"), ServerId);
-            Messages = new MessageManager(this, msgStore, config.ScopeTo(@"messages"));
-            Channels = new ChannelManager(this, config, Bot);
-            ChannelUsers = new ChannelUserRelations(this, Channels, Users, Sessions, Messages);
+            Users = new UserManager(Events);
+            Sessions = new SessionManager(Events, Users, config.ScopeTo(@"sessions"), ServerId);
+            Messages = new MessageManager(Events, msgStore, config.ScopeTo(@"messages"));
+            Channels = new ChannelManager(Events, config, Bot);
+            ChannelUsers = new ChannelUserRelations(Events, Channels, Users, Sessions, Messages);
             RateLimiter = new RateLimiter(config.ScopeTo(@"flood"));
 
             WelcomeMessage = new WelcomeMessage(config.ScopeTo(@"welcome"));
 
-            AddEventHandler(Sessions);
-            AddEventHandler(Users);
-            AddEventHandler(Channels);
-            AddEventHandler(ChannelUsers);
-            AddEventHandler(Messages);
+            Events.AddEventHandler(Sessions);
+            Events.ProtectEventHandler(Sessions);
+            Events.AddEventHandler(Users);
+            Events.ProtectEventHandler(Users);
+            Events.AddEventHandler(Channels);
+            Events.ProtectEventHandler(Channels);
+            Events.AddEventHandler(ChannelUsers);
+            Events.ProtectEventHandler(ChannelUsers);
+            Events.AddEventHandler(Messages);
+            Events.ProtectEventHandler(Messages);
+
+            Events.StartProcessing();
 
             Channels.UpdateChannels();
 
@@ -79,7 +85,7 @@ namespace SharpChat {
         }
 
         public void BroadcastMessage(string text) {
-            DispatchEvent(this, new BroadcastMessageEvent(Bot, text));
+            Events.DispatchEvent(this, new BroadcastMessageEvent(Bot, text));
         }
 
         // should this be moved to UserManager?
@@ -143,44 +149,6 @@ namespace SharpChat {
             //user.ForceChannel(channel);
         }
 
-        public void AddEventHandler(IEventHandler handler) {
-            if(handler == null)
-                throw new ArgumentNullException(nameof(handler));
-            lock(Sync)
-                if(!EventHandlers.Contains(handler))
-                    EventHandlers.Add(handler);
-        }
-
-        public void RemoveEventHandler(IEventHandler handler) {
-            if(handler == null)
-                throw new ArgumentNullException(nameof(handler));
-            // prevent asshattery
-            if(handler == Sessions
-                || handler == Users
-                || handler == Channels
-                || handler == ChannelUsers
-                || handler == Messages)
-                return;
-            lock(Sync)
-                EventHandlers.Remove(handler);
-        }
-
-        // DispatchEvent is responsible for cool deadlocks
-        // A proper queue should be implemented and DispatchEvent should become non-blocking
-        // Most uses of it should be fine with this but I think there's a couple instances where blocking is assumed
-        // Retrieval functions in the managers should also become assumedly non-blocking to provide the possibility of pulling shit from DB/DP
-        public void DispatchEvent(object sender, IEvent evt) {
-            if(evt == null)
-                throw new ArgumentNullException(nameof(evt));
-
-            lock(Sync) {
-                Logger.Debug(evt);
-
-                foreach(IEventHandler handler in EventHandlers)
-                    handler.HandleEvent(sender, evt);
-            }
-        }
-
         private bool IsDisposed;
         ~Context()
             => DoDispose();
@@ -194,6 +162,7 @@ namespace SharpChat {
             IsDisposed = true;
 
             BumpTimer.Dispose();
+            Events.FinishProcessing();
         }
     }
 }

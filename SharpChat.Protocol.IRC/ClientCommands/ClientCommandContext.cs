@@ -9,7 +9,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands {
         public IEnumerable<string> Arguments { get; }
 
         public ISession Session => Connection.Session;
-        public IUser User => Session.User;
+        public IUser User => Session?.User;
 
         public ClientCommandContext(IRCConnection connection, IEnumerable<string> args) {
             Connection = connection ?? throw new ArgumentNullException(nameof(connection));
