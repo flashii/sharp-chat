@@ -56,21 +56,21 @@ namespace SharpChat.Protocol.SockChat {
                 Context.WelcomeMessage
             ));
             addHandler(new MessageSendPacketHandler(Context.Users, Context.Channels, Context.ChannelUsers, Context.Messages, Context.Bot, new ICommand[] {
-                new JoinCommand(Context.Channels, Context.ChannelUsers, Context.Sessions),
+                new JoinCommand(Context.Channels, Context.ChannelUsers, Context.Sessions, Context.Bot),
                 new AFKCommand(Context.Users),
                 new WhisperCommand(),
                 new ActionCommand(Context.Messages),
                 new WhoCommand(Context.Users, Context.Channels, Context.ChannelUsers, Context.Bot),
-                new DeleteMessageCommand(Context.Messages),
+                new DeleteMessageCommand(Context.Messages, Context.Bot),
 
-                new NickCommand(Context.Users),
+                new NickCommand(Context.Users, Context.Bot),
                 new CreateChannelCommand(Context.Channels, Context.ChannelUsers, Context.Bot),
                 new DeleteChannelCommand(Context.Channels, Context.Bot),
                 new ChannelPasswordCommand(Context.Channels, Context.Bot),
                 new ChannelRankCommand(Context.Channels, Context.Bot),
 
-                new BroadcastCommand(Context),
-                new KickBanUserCommand(Context.Users),
+                new BroadcastCommand(Context, Context.Bot),
+                new KickBanUserCommand(Context.Users, Context.Bot),
                 new PardonUserCommand(Context.DataProvider, Context.Bot),
                 new PardonIPCommand(Context.DataProvider, Context.Bot),
                 new BanListCommand(Context.DataProvider, Context.Bot),

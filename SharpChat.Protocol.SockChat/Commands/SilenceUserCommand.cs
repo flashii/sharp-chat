@@ -19,28 +19,45 @@ namespace SharpChat.Protocol.SockChat.Commands {
             => name == @"silence";
 
         public bool DispatchCommand(CommandContext ctx) {
-            if(!ctx.User.Can(UserPermissions.SilenceUser))
-                throw new CommandNotAllowedException(ctx.Args);
+            if(!ctx.User.Can(UserPermissions.SilenceUser)) {
+                ctx.Connection.SendPacket(new CommandNotAllowedErrorPacket(Sender, ctx.Args));
+                return true;
+            }
 
             string userName = ctx.Args.ElementAtOrDefault(1);
-            if(string.IsNullOrEmpty(userName))
-                throw new UserNotFoundCommandException(userName);
+            if(string.IsNullOrEmpty(userName)) {
+                ctx.Connection.SendPacket(new UserNotFoundPacket(Sender, userName));
+                return true;
+            }
 
             Users.GetUserBySockChatName(userName, user => {
-                if(user == null)
-                    throw new UserNotFoundCommandException(userName);
-                if(user == ctx.User)
-                    throw new SelfSilenceCommandException();
-                if(user.Rank >= user.Rank)
-                    throw new SilenceNotAllowedCommandException();
-                //if(user.IsSilenced)
-                //    throw new AlreadySilencedCommandException();
+                if(user == null) {
+                    ctx.Connection.SendPacket(new UserNotFoundPacket(Sender, userName));
+                    return;
+                }
+
+                if(user == ctx.User) {
+                    ctx.Connection.SendPacket(new SilenceSelfErrorPacket(Sender));
+                    return;
+                }
+
+                if(user.Rank >= user.Rank) {
+                    ctx.Connection.SendPacket(new SilenceNotAllowedErrorPacket(Sender));
+                    return;
+                }
+
+                //if(user.IsSilenced) {
+                //    ctx.Connection.SendPacket(new SilencedAlreadyErrorPacket(Sender));
+                //    return;
+                //}
 
                 string durationArg = ctx.Args.ElementAtOrDefault(2);
 
                 if(!string.IsNullOrEmpty(durationArg)) {
-                    if(!double.TryParse(durationArg, out double durationRaw))
-                        throw new CommandFormatException();
+                    if(!double.TryParse(durationArg, out double durationRaw)) {
+                        ctx.Connection.SendPacket(new CommandFormatErrorPacket(Sender));
+                        return;
+                    }
                     //ctx.Chat.Users.Silence(user, TimeSpan.FromSeconds(durationRaw));
                 } //else
                   //ctx.Chat.Users.Silence(user);

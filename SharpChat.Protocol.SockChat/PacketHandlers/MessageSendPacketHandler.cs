@@ -2,6 +2,7 @@
 using SharpChat.Events;
 using SharpChat.Messages;
 using SharpChat.Protocol.SockChat.Commands;
+using SharpChat.Protocol.SockChat.Packets;
 using SharpChat.Sessions;
 using SharpChat.Users;
 using System;
@@ -86,12 +87,7 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
                 bool handled = false;
 
                 if(text[0] == '/')
-                    try {
-                        handled = HandleCommand(text, ctx.User, channel, ctx.Session, ctx.Connection);
-                    } catch(CommandException ex) {
-                        ctx.Connection.SendPacket(ex.ToPacket(Bot));
-                        handled = true;
-                    }
+                    handled = HandleCommand(text, ctx.User, channel, ctx.Session, ctx.Connection);
 
                 if(!handled)
                     Messages.Create(ctx.Session, channel, text);
@@ -106,8 +102,12 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
                 parts[i] = parts[i].CleanTextForCommand();
 
             ICommand command = Commands.FirstOrDefault(x => x.IsCommandMatch(commandName, parts));
-            if(command == null)
-                throw new CommandNotFoundException(commandName);
+
+            if(command == null) {
+                connection.SendPacket(new CommandNotFoundErrorPacket(Bot, commandName));
+                return true;
+            }
+
             return command.DispatchCommand(new CommandContext(parts, user, channel, session, connection));
         }
     }

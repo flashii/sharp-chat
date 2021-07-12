@@ -4,27 +4,21 @@ using System;
 using System.Text;
 
 namespace SharpChat.Protocol.SockChat.Packets {
-    public class BotResponsePacket : ServerPacket {
+    public abstract class BotResponsePacket : ServerPacket {
         private IChannel Channel { get; }
         private long UserId { get; }
         private BotArguments Arguments { get; }
         private DateTimeOffset DateTime { get; }
         private long ArbitraryId { get; }
 
-        public BotResponsePacket(IUser sender, string stringId, bool isError = true, params object[] args)
+        public BotResponsePacket(IUser sender, string stringId, bool isError, params object[] args)
             : this(sender?.UserId ?? throw new ArgumentNullException(nameof(sender)), stringId, isError, args) { }
 
-        public BotResponsePacket(long userId, string stringId, bool isError = true, params object[] args)
+        public BotResponsePacket(long userId, string stringId, bool isError, params object[] args)
             : this(null, userId, stringId, isError, args) { }
 
-        public BotResponsePacket(IChannel channel, long userId, string stringId, bool isError = true, params object[] args)
-            : this(channel, userId, new BotArguments(isError, stringId, args)) { }
-
-        public BotResponsePacket(IUser sender, BotArguments args)
-            : this(null, sender?.UserId ?? throw new ArgumentNullException(nameof(sender)), args) { }
-
-        public BotResponsePacket(long userId, BotArguments args)
-            : this(null, userId, args) { }
+        public BotResponsePacket(IChannel channel, long userId, string stringId, bool isError, params object[] args)
+            : this(channel, userId, new BotArguments(stringId, isError, args)) { }
 
         public BotResponsePacket(IChannel channel, long userid, BotArguments args) {
             Arguments = args ?? throw new ArgumentNullException(nameof(args));

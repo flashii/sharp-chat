@@ -3,6 +3,6 @@
 namespace SharpChat.Protocol.SockChat.Packets {
     public class ChannelPasswordResponsePacket : BotResponsePacket {
         public ChannelPasswordResponsePacket(IUser sender)
-            : base(sender, BotArguments.Notice(@"cpwdchan")) { }
+            : base(sender, BotArguments.CHANNEL_PASSWORD_CHANGED, false) { }
     }
 }

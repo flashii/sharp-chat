@@ -21,15 +21,21 @@ namespace SharpChat.Protocol.SockChat.Commands {
         public bool DispatchCommand(CommandContext ctx) {
             string channelName = string.Join('_', ctx.Args.Skip(1));
 
-            if(string.IsNullOrWhiteSpace(channelName))
-                throw new CommandFormatException();
+            if(string.IsNullOrWhiteSpace(channelName)) {
+                ctx.Connection.SendPacket(new CommandFormatErrorPacket(Sender));
+                return true;
+            }
 
             Channels.GetChannelByName(channelName, channel => {
-                if(channel == null)
-                    throw new ChannelNotFoundCommandException(channelName);
+                if(channel == null) {
+                    ctx.Connection.SendPacket(new ChannelNotFoundErrorPacket(Sender, channelName));
+                    return;
+                }
 
-                if(!ctx.User.Can(UserPermissions.DeleteChannel) && channel.OwnerId != ctx.User.UserId)
-                    throw new ChannelDeletionCommandException(channel.Name);
+                if(!ctx.User.Can(UserPermissions.DeleteChannel) && channel.OwnerId != ctx.User.UserId) {
+                    ctx.Connection.SendPacket(new ChannelDeleteErrorPacket(Sender, channel));
+                    return;
+                }
 
                 Channels.Remove(channel);
                 ctx.Connection.SendPacket(new ChannelDeleteResponsePacket(Sender, channel.Name));

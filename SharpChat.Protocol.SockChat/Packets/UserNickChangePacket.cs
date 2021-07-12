@@ -3,6 +3,6 @@
 namespace SharpChat.Protocol.SockChat.Packets {
     public class UserNickChangePacket : BotResponsePacket {
         public UserNickChangePacket(IUser sender, string oldName, string newName)
-            : base(sender, BotArguments.Notice(@"nick", oldName, newName)) { }
+            : base(sender, BotArguments.NICKNAME_CHANGE, false, oldName, newName) { }
     }
 }

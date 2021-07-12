@@ -20,19 +20,23 @@ namespace SharpChat.Protocol.SockChat.Commands {
             => name is @"pardonip" or @"unbanip";
 
         public bool DispatchCommand(CommandContext ctx) {
-            if(!ctx.User.Can(UserPermissions.BanUser | UserPermissions.KickUser))
-                throw new CommandNotAllowedException(ctx.Args);
+            if(!ctx.User.Can(UserPermissions.BanUser | UserPermissions.KickUser)) {
+                ctx.Connection.SendPacket(new CommandNotAllowedErrorPacket(Sender, ctx.Args));
+                return true;
+            }
 
             string ipAddress = ctx.Args.ElementAtOrDefault(1);
-            if(!IPAddress.TryParse(ipAddress, out IPAddress ipAddr))
-                throw new NotBannedCommandException(ipAddr?.ToString() ?? @"::");
+            if(!IPAddress.TryParse(ipAddress, out IPAddress ipAddr)) {
+                ctx.Connection.SendPacket(new NotBannedErrorPacket(Sender, ipAddr?.ToString() ?? @"::"));
+                return true;
+            }
 
             DataProvider.BanClient.RemoveBan(ipAddr, success => {
                 if(success)
                     ctx.Connection.SendPacket(new PardonResponsePacket(Sender, ipAddr));
                 else
-                    ctx.Connection.SendPacket(new NotBannedCommandException(ipAddr.ToString()).ToPacket(Sender));
-            }, ex => ctx.Connection.SendPacket(new CommandGenericException().ToPacket(Sender)));
+                    ctx.Connection.SendPacket(new NotBannedErrorPacket(Sender, ipAddr.ToString()));
+            }, ex => ctx.Connection.SendPacket(new GenericErrorPacket(Sender)));
 
             return true;
         }

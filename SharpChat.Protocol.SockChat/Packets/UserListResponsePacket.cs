@@ -7,13 +7,13 @@ using System.Text;
 namespace SharpChat.Protocol.SockChat.Packets {
     public class UserListResponsePacket : BotResponsePacket {
         public UserListResponsePacket(IUser sender, IUser requester, IEnumerable<IUser> users)
-            : base(sender, BotArguments.Notice(@"who", MakeUserList(requester, users))) { }
+            : base(sender, BotArguments.USER_LIST_ALL, false, MakeUserList(requester, users)) { }
 
         public UserListResponsePacket(IUser sender, IChannel channel, IUser requester, IEnumerable<IUser> users)
             : this(sender, channel.Name, requester, users) { }
 
         public UserListResponsePacket(IUser sender, string channelName, IUser requester, IEnumerable<IUser> users)
-            : base(sender, BotArguments.Notice(@"whochan", channelName, MakeUserList(requester, users))) { }
+            : base(sender, BotArguments.USER_LIST_CHANNEL, false, channelName, MakeUserList(requester, users)) { }
 
         private static string MakeUserList(IUser requester, IEnumerable<IUser> users) {
             StringBuilder sb = new();

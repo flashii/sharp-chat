@@ -19,21 +19,32 @@ namespace SharpChat.Protocol.SockChat.Commands {
             => name == @"unsilence";
 
         public bool DispatchCommand(CommandContext ctx) {
-            if(!ctx.User.Can(UserPermissions.SilenceUser))
-                throw new CommandNotAllowedException(ctx.Args);
+            if(!ctx.User.Can(UserPermissions.SilenceUser)) {
+                ctx.Connection.SendPacket(new CommandNotAllowedErrorPacket(Sender, ctx.Args));
+                return true;
+            }
 
             string userName = ctx.Args.ElementAtOrDefault(1);
-            if(string.IsNullOrEmpty(userName))
-                throw new UserNotFoundCommandException(userName);
+            if(string.IsNullOrEmpty(userName)) {
+                ctx.Connection.SendPacket(new UserNotFoundPacket(Sender, userName));
+                return true;
+            }
 
             Users.GetUserBySockChatName(userName, user => {
-                if(user == null)
-                    throw new UserNotFoundCommandException(userName);
-                if(user.Rank >= ctx.User.Rank)
-                    throw new RevokeSilenceNotAllowedCommandException();
+                if(user == null) {
+                    ctx.Connection.SendPacket(new UserNotFoundPacket(Sender, userName));
+                    return;
+                }
 
-                //if(!user.IsSilenced)
-                //    throw new NotSilencedCommandException();
+                if(user.Rank >= ctx.User.Rank) {
+                    ctx.Connection.SendPacket(new SilenceRevokeNotAllowedErrorPacket(Sender));
+                    return;
+                }
+
+                //if(!user.IsSilenced) {
+                //    ctx.Connection.SendPacket(new SilenceAlreadyRevokedErrorPacket(Sender));
+                //    return;
+                //}
 
                 //ctx.Chat.Users.RevokeSilence(user);
 

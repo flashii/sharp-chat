@@ -19,8 +19,10 @@ namespace SharpChat.Protocol.SockChat.Commands {
             => name is @"password" or @"pwd";
 
         public bool DispatchCommand(CommandContext ctx) {
-            if(!ctx.User.Can(UserPermissions.SetChannelPassword) || ctx.Channel.OwnerId != ctx.User.UserId)
-                throw new CommandNotAllowedException(ctx.Args);
+            if(!ctx.User.Can(UserPermissions.SetChannelPassword) || ctx.Channel.OwnerId != ctx.User.UserId) {
+                ctx.Connection.SendPacket(new CommandNotAllowedErrorPacket(Sender, ctx.Args));
+                return true;
+            }
 
             string password = string.Join(' ', ctx.Args.Skip(1)).Trim();
 

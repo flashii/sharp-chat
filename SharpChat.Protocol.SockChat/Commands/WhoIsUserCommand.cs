@@ -23,16 +23,22 @@ namespace SharpChat.Protocol.SockChat.Commands {
             => name is @"ip" or @"whois";
 
         public bool DispatchCommand(CommandContext ctx) {
-            if(!ctx.User.Can(UserPermissions.SeeIPAddress))
-                throw new CommandNotAllowedException(ctx.Args);
+            if(!ctx.User.Can(UserPermissions.SeeIPAddress)) {
+                ctx.Connection.SendPacket(new CommandNotAllowedErrorPacket(Sender, ctx.Args));
+                return true;
+            }
 
             string userName = ctx.Args.ElementAtOrDefault(1);
-            if(string.IsNullOrEmpty(userName))
-                throw new UserNotFoundCommandException(userName);
+            if(string.IsNullOrEmpty(userName)) {
+                ctx.Connection.SendPacket(new UserNotFoundPacket(Sender, userName));
+                return true;
+            }
 
             Users.GetUserBySockChatName(userName, user => {
-                if(user == null)
-                    throw new UserNotFoundCommandException(userName);
+                if(user == null) {
+                    ctx.Connection.SendPacket(new UserNotFoundPacket(Sender, userName));
+                    return;
+                }
 
                 Sessions.GetRemoteAddresses(user, addrs => {
                     foreach(IPAddress addr in addrs)

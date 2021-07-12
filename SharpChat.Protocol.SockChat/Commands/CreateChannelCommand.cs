@@ -23,19 +23,25 @@ namespace SharpChat.Protocol.SockChat.Commands {
             => name == NAME;
 
         public bool DispatchCommand(CommandContext ctx) {
-            if(!ctx.User.Can(UserPermissions.CreateChannel))
-                throw new CommandNotAllowedException(NAME);
+            if(!ctx.User.Can(UserPermissions.CreateChannel)) {
+                ctx.Connection.SendPacket(new CommandNotAllowedErrorPacket(Sender, ctx.Args));
+                return true;
+            }
 
             bool hasRank;
-            if(ctx.Args.Count() < 2 || (hasRank = ctx.Args.ElementAtOrDefault(1)?.All(char.IsDigit) == true && ctx.Args.Count() < 3))
-                throw new CommandFormatException();
+            if(ctx.Args.Count() < 2 || (hasRank = ctx.Args.ElementAtOrDefault(1)?.All(char.IsDigit) == true && ctx.Args.Count() < 3)) {
+                ctx.Connection.SendPacket(new CommandFormatErrorPacket(Sender));
+                return true;
+            }
 
             int rank = 0;
             if(hasRank && !int.TryParse(ctx.Args.ElementAtOrDefault(1), out rank) && rank < 0)
                 rank = 0;
 
-            if(rank > ctx.User.Rank)
-                throw new InsufficientRankForChangeCommandException();
+            if(rank > ctx.User.Rank) {
+                ctx.Connection.SendPacket(new InsufficientRankErrorPacket(Sender));
+                return true;
+            }
 
             string createChanName = string.Join('_', ctx.Args.Skip(hasRank ? 2 : 1));
             IChannel createChan;
@@ -49,9 +55,11 @@ namespace SharpChat.Protocol.SockChat.Commands {
                     rank
                 );
             } catch(ChannelExistException) {
-                throw new ChannelExistsCommandException(createChanName);
+                ctx.Connection.SendPacket(new ChannelExistsErrorPacket(Sender, createChanName));
+                return true;
             } catch(ChannelInvalidNameException) {
-                throw new ChannelNameInvalidCommandException();
+                ctx.Connection.SendPacket(new ChannelNameFormatErrorPacket(Sender));
+                return true;
             }
 
             ChannelUsers.JoinChannel(createChan, ctx.Session);

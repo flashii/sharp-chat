@@ -30,11 +30,15 @@ namespace SharpChat.Protocol.SockChat.Commands {
 
         private void WhoChannel(CommandContext ctx, string channelName) {
             Channels.GetChannelByName(channelName, channel => {
-                if(channel == null)
-                    throw new ChannelNotFoundCommandException(channelName);
+                if(channel == null) {
+                    ctx.Connection.SendPacket(new ChannelNotFoundErrorPacket(Sender, channelName));
+                    return;
+                }
 
-                if(channel.MinimumRank > ctx.User.Rank || (channel.HasPassword && !ctx.User.Can(UserPermissions.JoinAnyChannel)))
-                    throw new UserListChannelNotFoundCommandException(channelName);
+                if(channel.MinimumRank > ctx.User.Rank || (channel.HasPassword && !ctx.User.Can(UserPermissions.JoinAnyChannel))) {
+                    ctx.Connection.SendPacket(new UserListChannelNotFoundPacket(Sender, channelName));
+                    return;
+                }
 
                 ChannelUsers.GetUsers(
                     channel,

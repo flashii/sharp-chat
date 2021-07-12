@@ -5,8 +5,6 @@ using System.Text;
 
 namespace SharpChat.Protocol.SockChat.Packets {
     public class WelcomeMessagePacket : ServerPacket {
-        private const string STRING_ID = @"welcome";
-
         private IUser Sender { get; }
         private string Message { get; }
 
@@ -26,9 +24,9 @@ namespace SharpChat.Protocol.SockChat.Packets {
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append(Sender.Pack());
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(BotArguments.Notice(STRING_ID, Message));
+            sb.Append(new BotArguments(BotArguments.WELCOME, false, Message));
             sb.Append(IServerPacket.SEPARATOR);
-            sb.Append(STRING_ID);
+            sb.Append(BotArguments.WELCOME);
             sb.Append(IServerPacket.SEPARATOR);
             sb.Append('0');
             sb.Append(IServerPacket.SEPARATOR);

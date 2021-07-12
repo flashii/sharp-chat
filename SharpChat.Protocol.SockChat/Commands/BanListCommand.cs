@@ -18,15 +18,17 @@ namespace SharpChat.Protocol.SockChat.Commands {
             => name is @"bans" or @"banned";
 
         public bool DispatchCommand(CommandContext ctx) {
-            if(!ctx.User.Can(UserPermissions.BanUser | UserPermissions.KickUser))
-                throw new CommandNotAllowedException(ctx.Args);
+            if(!ctx.User.Can(UserPermissions.BanUser | UserPermissions.KickUser)) {
+                ctx.Connection.SendPacket(new CommandNotAllowedErrorPacket(Sender, ctx.Args));
+                return true;
+            }
 
             DataProvider.BanClient.GetBanList(b => {
                 ctx.Connection.SendPacket(new BanListPacket(Sender, b));
             }, ex => {
                 Logger.Write(@"Error during ban list retrieval.");
                 Logger.Write(ex);
-                ctx.Connection.SendPacket(new CommandGenericException().ToPacket(Sender));
+                ctx.Connection.SendPacket(new GenericErrorPacket(Sender));
             });
 
             return true;

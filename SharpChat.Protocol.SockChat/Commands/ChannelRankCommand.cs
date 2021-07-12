@@ -19,11 +19,15 @@ namespace SharpChat.Protocol.SockChat.Commands {
             => name is @"rank" or @"hierarchy" or @"priv";
 
         public bool DispatchCommand(CommandContext ctx) {
-            if(!ctx.User.Can(UserPermissions.SetChannelHierarchy) || ctx.Channel.OwnerId != ctx.User.UserId)
-                throw new CommandNotAllowedException(ctx.Args);
+            if(!ctx.User.Can(UserPermissions.SetChannelHierarchy) || ctx.Channel.OwnerId != ctx.User.UserId) {
+                ctx.Connection.SendPacket(new CommandNotAllowedErrorPacket(Sender, ctx.Args));
+                return true;
+            }
 
-            if(!int.TryParse(ctx.Args.ElementAtOrDefault(1), out int rank) || rank > ctx.User.Rank)
-                throw new InsufficientRankForChangeCommandException();
+            if(!int.TryParse(ctx.Args.ElementAtOrDefault(1), out int rank) || rank > ctx.User.Rank) {
+                ctx.Connection.SendPacket(new InsufficientRankErrorPacket(Sender));
+                return true;
+            }
 
             Channels.Update(ctx.Channel, minRank: rank);
             ctx.Connection.SendPacket(new ChannelRankResponsePacket(Sender));

@@ -1,6 +1,5 @@
 ﻿using Fleck;
 using SharpChat.Channels;
-using SharpChat.Events;
 using SharpChat.Protocol.SockChat.Packets;
 using SharpChat.Sessions;
 using System;
