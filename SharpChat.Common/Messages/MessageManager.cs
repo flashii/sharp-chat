@@ -43,7 +43,7 @@ namespace SharpChat.Messages {
             if(text.Length > TextMaxLength)
                 throw new ArgumentException(@"Provided text is too long.", nameof(text));
 
-            Message message = new Message(channel, sender, text, isAction);
+            Message message = new(channel, sender, text, isAction);
             Dispatcher.DispatchEvent(this, new MessageCreateEvent(session, message));
             return message;
         }
@@ -61,7 +61,7 @@ namespace SharpChat.Messages {
             if(text.Length > TextMaxLength)
                 throw new ArgumentException(@"Provided text is too long.", nameof(text));
 
-            MessageUpdateEvent mue = new MessageUpdateEvent(message, editor, text);
+            MessageUpdateEvent mue = new(message, editor, text);
             if(message is IEventHandler meh)
                 meh.HandleEvent(this, mue);
             Dispatcher.DispatchEvent(this, mue);
@@ -73,7 +73,7 @@ namespace SharpChat.Messages {
             if(message == null)
                 throw new ArgumentNullException(nameof(message));
 
-            MessageDeleteEvent mde = new MessageDeleteEvent(user, message);
+            MessageDeleteEvent mde = new(user, message);
             if(message is IEventHandler meh)
                 meh.HandleEvent(this, mde);
             Dispatcher.DispatchEvent(this, mde);

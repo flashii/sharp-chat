@@ -6,8 +6,8 @@ using System.Threading;
 
 namespace Hamakaze {
     public class HttpConnectionManager : IDisposable {
-        private List<HttpConnection> Connections { get; } = new List<HttpConnection>();
-        private Mutex Lock { get; } = new Mutex();
+        private List<HttpConnection> Connections { get; } = new();
+        private Mutex Lock { get; } = new();
 
         public HttpConnectionManager() {
         }
@@ -37,7 +37,7 @@ namespace Hamakaze {
         }
 
         private HttpConnection CreateConnectionInternal(string host, IPEndPoint endPoint, bool secure) {
-            HttpConnection conn = new HttpConnection(host, endPoint, secure);
+            HttpConnection conn = new(host, endPoint, secure);
             Connections.Add(conn);
             return conn;
         }

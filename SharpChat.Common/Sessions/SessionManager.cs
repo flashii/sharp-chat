@@ -23,8 +23,8 @@ namespace SharpChat.Sessions {
 
         private UserManager Users { get; }
 
-        private List<ISession> Sessions { get; } = new List<ISession>();
-        private List<Session> LocalSessions { get; } = new List<Session>();
+        private List<ISession> Sessions { get; } = new();
+        private List<Session> LocalSessions { get; } = new();
 
         public SessionManager(IEventDispatcher dispatcher, UserManager users, IConfig config, string serverId) {
             if(config == null)

@@ -33,13 +33,13 @@ namespace SharpChat.Protocol.IRC.ServerCommands {
         }
 
         public static IEnumerable<ServerPrivateMessageCommand> Split(IChannel channel, IUser sender, string text) {
-            Queue<string> parts = new Queue<string>(SplitText(text));
+            Queue<string> parts = new(SplitText(text));
             while(parts.TryDequeue(out string part))
                 yield return new ServerPrivateMessageCommand(channel, sender, part);
         }
 
         public static IEnumerable<string> SplitText(string text, int targetLength = 400) {
-            Queue<string> lines = new Queue<string>(text.Split('\n'));
+            Queue<string> lines = new(text.Split('\n'));
 
             static int getStartingChar(byte[] buff, int index) {
                 return (buff[index] & 0xC0) == 0x80 ? getStartingChar(buff, index - 1) : index;

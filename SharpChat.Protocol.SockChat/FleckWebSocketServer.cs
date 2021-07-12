@@ -27,7 +27,7 @@ namespace SharpChat.Protocol.SockChat {
 
             SupportDualStack = true;
 
-            Socket socket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.IP);
+            Socket socket = new(endPoint.AddressFamily, SocketType.Stream, ProtocolType.IP);
             socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
 
             if(SupportDualStack && Type.GetType(@"Mono.Runtime") == null && RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
@@ -84,7 +84,7 @@ namespace SharpChat.Protocol.SockChat {
                     FleckLog.Info("Listener socket restarting");
                     try {
                         ListenerSocket.Dispose();
-                        Socket socket = new Socket(_locationIP.AddressFamily, SocketType.Stream, ProtocolType.IP);
+                        Socket socket = new(_locationIP.AddressFamily, SocketType.Stream, ProtocolType.IP);
                         socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, 1);
                         ListenerSocket = new SocketWrapper(socket);
                         Start(_config);

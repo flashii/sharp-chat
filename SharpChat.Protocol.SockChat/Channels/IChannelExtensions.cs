@@ -5,7 +5,7 @@ using System.Text;
 namespace SharpChat.Protocol.SockChat.Channels {
     public static class IChannelExtensions {
         public static string Pack(this IChannel channel) {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             channel.Pack(sb);
             return sb.ToString();
         }

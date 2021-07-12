@@ -11,14 +11,14 @@ namespace SharpChat.Channels {
     public class ChannelInvalidNameException : ChannelException { }
 
     public class ChannelManager : IEventHandler {
-        private Dictionary<string, Channel> Channels { get; } = new Dictionary<string, Channel>();
+        private Dictionary<string, Channel> Channels { get; } = new();
 
         private IConfig Config { get; }
         private CachedValue<string[]> ChannelIds { get; }
 
         private IEventDispatcher Dispatcher { get; }
         private ChatBot Bot { get; }
-        private object Sync { get; } = new object();
+        private object Sync { get; } = new();
 
         public ChannelManager(IEventDispatcher dispatcher, IConfig config, ChatBot bot) {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
@@ -170,7 +170,7 @@ namespace SharpChat.Channels {
             ValidateName(name);
 
             lock(Sync) {
-                Channel channel = new Channel(channelId, name, topic, temp, minRank, password, autoJoin, maxCapacity, ownerId, order);
+                Channel channel = new(channelId, name, topic, temp, minRank, password, autoJoin, maxCapacity, ownerId, order);
                 Channels.Add(channel.ChannelId, channel);
 
                 Dispatcher.DispatchEvent(this, new ChannelCreateEvent(channel));

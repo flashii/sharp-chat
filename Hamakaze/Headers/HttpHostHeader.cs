@@ -9,7 +9,7 @@ namespace Hamakaze.Headers {
         public override string Name => NAME;
         public override object Value {
             get {
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new();
                 sb.Append(Host);
                 if(Port != -1)
                     sb.AppendFormat(@":{0}", Port);

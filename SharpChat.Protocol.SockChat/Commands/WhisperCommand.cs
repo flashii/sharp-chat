@@ -3,7 +3,7 @@
 namespace SharpChat.Protocol.SockChat.Commands {
     public class WhisperCommand : ICommand {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
-            => name == @"whisper" || name == @"msg";
+            => name is @"whisper" or @"msg";
 
         public bool DispatchCommand(CommandContext ctx) {
             // reimplement this entirely

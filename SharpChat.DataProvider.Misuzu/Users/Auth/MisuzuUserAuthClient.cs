@@ -35,16 +35,16 @@ namespace SharpChat.DataProvider.Misuzu.Users.Auth {
                 return;
             }
 #endif
-            MisuzuUserAuthRequest mar = new MisuzuUserAuthRequest(request);
+            MisuzuUserAuthRequest mar = new(request);
 
-            HttpRequestMessage req = new HttpRequestMessage(HttpRequestMessage.POST, DataProvider.GetURL(URL));
+            HttpRequestMessage req = new(HttpRequestMessage.POST, DataProvider.GetURL(URL));
             req.SetHeader(@"X-SharpChat-Signature", DataProvider.GetSignedHash(mar));
             req.SetBody(JsonSerializer.SerializeToUtf8Bytes(mar));
 
             HttpClient.SendRequest(
                 req,
                 onComplete: (t, r) => {
-                    using MemoryStream ms = new MemoryStream();
+                    using MemoryStream ms = new();
                     r.Body.CopyTo(ms);
                     MisuzuUserAuthResponse res = JsonSerializer.Deserialize<MisuzuUserAuthResponse>(ms.ToArray());
                     if(res.Success)

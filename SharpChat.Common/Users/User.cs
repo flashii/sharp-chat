@@ -16,8 +16,8 @@ namespace SharpChat.Users {
         public UserStatus Status { get; private set; } = UserStatus.Online;
         public string StatusMessage { get; private set; }
 
-        private readonly object Sync = new object();
-        private HashSet<string> Channels { get; } = new HashSet<string>();
+        private readonly object Sync = new();
+        private HashSet<string> Channels { get; } = new();
 
         public User(
             long userId,

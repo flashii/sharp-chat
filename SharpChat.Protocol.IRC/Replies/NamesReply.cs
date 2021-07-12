@@ -26,7 +26,7 @@ namespace SharpChat.Protocol.IRC.Replies {
         public static void SendBatch(IRCConnection conn, IChannel channel, IEnumerable<IUser> users) {
             const int max_length = 400; // allow for 112 characters of overhead
             int length = 0;
-            List<string> userNames = new List<string>();
+            List<string> userNames = new();
 
             void sendBatch() {
                 if(length < 1)

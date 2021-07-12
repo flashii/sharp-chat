@@ -18,7 +18,7 @@ namespace SharpChat.Messages.Storage {
                 throw new ArgumentNullException(nameof(reader));
             UserId = reader.ReadI64(@"msg_sender_id");
             UserName = reader.ReadString(@"msg_sender_name");
-            Colour = new Colour(reader.ReadI32(@"msg_sender_colour"));
+            Colour = new(reader.ReadI32(@"msg_sender_colour"));
             Rank = reader.ReadI32(@"msg_sender_rank");
             NickName = reader.IsNull(@"msg_sender_nick") ? null : reader.ReadString(@"msg_sender_nick");
             Permissions = (UserPermissions)reader.ReadI32(@"msg_sender_perms");

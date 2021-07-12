@@ -18,7 +18,7 @@ namespace SharpChat.Sessions {
         public bool IsConnected { get; private set; }
         public IPAddress RemoteAddress { get; private set; }
 
-        private readonly object Sync = new object();
+        private readonly object Sync = new();
 
         public IConnection Connection { get; set; }
 

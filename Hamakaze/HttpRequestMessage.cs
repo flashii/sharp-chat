@@ -25,7 +25,7 @@ namespace Hamakaze {
         public bool IsDefaultPort { get; }
 
         public override IEnumerable<HttpHeader> Headers => HeaderList;
-        private List<HttpHeader> HeaderList { get; } = new List<HttpHeader>();
+        private List<HttpHeader> HeaderList { get; } = new();
 
         private Stream BodyStream { get; set; }
         public override Stream Body {

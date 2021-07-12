@@ -55,7 +55,7 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
             if(string.IsNullOrEmpty(token))
                 return;
 
-            Action<Exception> exceptionHandler = new Action<Exception>(ex => {
+            Action<Exception> exceptionHandler = new(ex => {
                 Logger.Debug($@"[{ctx.Connection}] Auth fail: {ex.Message}");
                 ctx.Connection.SendPacket(new AuthFailPacket(AuthFailReason.AuthInvalid));
                 ctx.Connection.Close();

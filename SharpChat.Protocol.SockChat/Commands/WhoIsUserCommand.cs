@@ -20,7 +20,7 @@ namespace SharpChat.Protocol.SockChat.Commands {
         }
 
         public bool IsCommandMatch(string name, IEnumerable<string> args)
-            => name == @"ip" || name == @"whois";
+            => name is @"ip" or @"whois";
 
         public bool DispatchCommand(CommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.SeeIPAddress))

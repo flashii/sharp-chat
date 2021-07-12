@@ -170,7 +170,7 @@ namespace SharpChat.Channels {
 
             // this is pretty disgusting
             Channels.GetChannels(channels, channels => {
-                HashSet<long> ids = new HashSet<long>();
+                HashSet<long> ids = new();
 
                 foreach(IChannel c in channels) {
                     if(c is not Channel channel)
@@ -193,7 +193,7 @@ namespace SharpChat.Channels {
             if(callback == null)
                 throw new ArgumentNullException(nameof(callback));
 
-            HashSet<IUser> all = new HashSet<IUser>();
+            HashSet<IUser> all = new();
 
             Channels.GetChannels(channels => {
                 foreach(IChannel channel in channels) {
@@ -273,7 +273,7 @@ namespace SharpChat.Channels {
             }
 
             Channels.GetChannels(channels, channels => {
-                HashSet<string> sessionIds = new HashSet<string>();
+                HashSet<string> sessionIds = new();
 
                 foreach(IChannel c in channels) {
                     if(c is not Channel channel)

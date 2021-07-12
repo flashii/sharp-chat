@@ -6,7 +6,7 @@ using System.Linq;
 namespace SharpChat.Protocol.SockChat.Commands {
     public class ActionCommand : ICommand {
         public bool IsCommandMatch(string name, IEnumerable<string> args)
-            => name == @"action" || name == @"me";
+            => name is @"action" or @"me";
 
         private MessageManager Messages { get; }
 

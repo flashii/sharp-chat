@@ -6,9 +6,9 @@ using System.Linq;
 
 namespace SharpChat.Users {
     public class UserManager : IEventHandler {
-        private List<User> Users { get; } = new List<User>();
+        private List<User> Users { get; } = new();
         private IEventDispatcher Dispatcher { get; }
-        private readonly object Sync = new object();
+        private readonly object Sync = new();
 
         public UserManager(IEventDispatcher dispatcher) {
             Dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
@@ -180,7 +180,7 @@ namespace SharpChat.Users {
                 throw new ArgumentNullException(nameof(userName));
 
             lock(Sync) {
-                User user = new User(userId, userName, colour, rank, perms, status, statusMessage, nickName);
+                User user = new(userId, userName, colour, rank, perms, status, statusMessage, nickName);
                 Users.Add(user);
                 Dispatcher.DispatchEvent(this, new UserConnectEvent(user));
                 callback?.Invoke(user);

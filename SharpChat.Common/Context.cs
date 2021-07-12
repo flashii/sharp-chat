@@ -29,12 +29,12 @@ namespace SharpChat {
 
         public WelcomeMessage WelcomeMessage { get; }
 
-        public ChatBot Bot { get; } = new ChatBot(); 
+        public ChatBot Bot { get; } = new(); 
 
         private Timer BumpTimer { get; }
-        private readonly object Sync = new object();
+        private readonly object Sync = new();
 
-        private List<IEventHandler> EventHandlers { get; } = new List<IEventHandler>();
+        private List<IEventHandler> EventHandlers { get; } = new();
 
         public DateTimeOffset Created { get; }
 

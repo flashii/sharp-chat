@@ -13,10 +13,10 @@ namespace Hamakaze {
         public const string TYPE_TEXT = @"text";
         public const string TYPE_VIDEO = @"video";
 
-        public static readonly HttpMediaType OctetStream = new HttpMediaType(TYPE_APPLICATION, @"octet-stream");
-        public static readonly HttpMediaType FWIF = new HttpMediaType(TYPE_APPLICATION, @"x.fwif");
-        public static readonly HttpMediaType JSON = new HttpMediaType(TYPE_APPLICATION, @"json");
-        public static readonly HttpMediaType HTML = new HttpMediaType(TYPE_TEXT, @"html", args: new[] { Param.UTF8 });
+        public static readonly HttpMediaType OctetStream = new(TYPE_APPLICATION, @"octet-stream");
+        public static readonly HttpMediaType FWIF = new(TYPE_APPLICATION, @"x.fwif");
+        public static readonly HttpMediaType JSON = new(TYPE_APPLICATION, @"json");
+        public static readonly HttpMediaType HTML = new(TYPE_TEXT, @"html", args: new[] { Param.UTF8 });
 
         public string Type { get; }
         public string Subtype { get; }
@@ -70,7 +70,7 @@ namespace Hamakaze {
         }
 
         public override string ToString() {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             sb.AppendFormat(@"{0}/{1}", Type, Subtype);
             if(!string.IsNullOrWhiteSpace(Suffix))
                 sb.AppendFormat(@"+{0}", Suffix);
@@ -120,8 +120,8 @@ namespace Hamakaze {
         public readonly struct Param : IComparable<Param?>, IEquatable<Param?> {
             public const string CHARSET = @"charset";
 
-            public static readonly Param ASCII = new Param(CHARSET, @"us-ascii");
-            public static readonly Param UTF8 = new Param(CHARSET, @"utf-8");
+            public static readonly Param ASCII = new(CHARSET, @"us-ascii");
+            public static readonly Param UTF8 = new(CHARSET, @"utf-8");
 
             public string Name { get; }
             public string Value { get; }
@@ -146,9 +146,9 @@ namespace Hamakaze {
                 if(!other.HasValue)
                     return -1;
                 int name = Name.CompareTo(other.Value.Name);
-                if(name != 0)
-                    return name;
-                return Value.CompareTo(other.Value.Value);
+                return name != 0
+                    ? name
+                    : Value.CompareTo(other.Value.Value);
             }
 
             public bool Equals(Param? other) {

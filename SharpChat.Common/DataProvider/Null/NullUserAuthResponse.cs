@@ -15,8 +15,8 @@ namespace SharpChat.DataProvider.Null {
             UserId = uar.UserId;
             UserName = $@"Misaka-{uar.UserId}";
             Rank = (int)(uar.UserId % 10);
-            Random rng = new Random((int)uar.UserId);
-            Colour = new Colour(rng.Next());
+            Random rng = new((int)uar.UserId);
+            Colour = new(rng.Next());
             Permissions = (UserPermissions)rng.Next();
         }
     }

@@ -12,12 +12,12 @@ namespace Hamakaze {
         public const string CHUNKED = @"chunked";
         public const string ANY = @"*";
 
-        public static readonly HttpEncoding Any = new HttpEncoding(ANY);
-        public static readonly HttpEncoding None = new HttpEncoding(ANY, 0f);
-        public static readonly HttpEncoding Deflate = new HttpEncoding(DEFLATE);
-        public static readonly HttpEncoding GZip = new HttpEncoding(GZIP);
-        public static readonly HttpEncoding Brotli = new HttpEncoding(BROTLI);
-        public static readonly HttpEncoding Identity = new HttpEncoding(IDENTITY);
+        public static readonly HttpEncoding Any = new(ANY);
+        public static readonly HttpEncoding None = new(ANY, 0f);
+        public static readonly HttpEncoding Deflate = new(DEFLATE);
+        public static readonly HttpEncoding GZip = new(GZIP);
+        public static readonly HttpEncoding Brotli = new(BROTLI);
+        public static readonly HttpEncoding Identity = new(IDENTITY);
 
         public string Name { get; }
         public float Quality { get; }
@@ -47,9 +47,9 @@ namespace Hamakaze {
         }
 
         public override string ToString() {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             sb.Append(Name);
-            if(Quality >= 0f && Quality < 1f)
+            if(Quality is >= 0f and < 1f)
                 sb.AppendFormat(CultureInfo.InvariantCulture, @";q={0:0.0}", Quality);
             return sb.ToString();
         }

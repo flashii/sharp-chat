@@ -19,9 +19,9 @@ namespace SharpChat.Channels {
         public int Order { get; private set; }
         public long OwnerId { get; private set; }
 
-        private readonly object Sync = new object();
-        private HashSet<long> Users { get; } = new HashSet<long>();
-        private Dictionary<string, long> Sessions { get; } = new Dictionary<string, long>();
+        private readonly object Sync = new();
+        private HashSet<long> Users { get; } = new();
+        private Dictionary<string, long> Sessions { get; } = new();
 
         public bool HasTopic
             => !string.IsNullOrWhiteSpace(Topic);
@@ -138,7 +138,7 @@ namespace SharpChat.Channels {
                 case ChannelUserLeaveEvent cule:
                     lock(Sync) {
                         Users.Remove(cule.UserId);
-                        Queue<string> delete = new Queue<string>(Sessions.Where(s => s.Value == cule.UserId).Select(s => s.Key));
+                        Queue<string> delete = new(Sessions.Where(s => s.Value == cule.UserId).Select(s => s.Key));
                         while(delete.TryDequeue(out string sessionId))
                             Sessions.Remove(sessionId);
                     }

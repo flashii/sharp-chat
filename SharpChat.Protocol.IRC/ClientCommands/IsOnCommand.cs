@@ -23,7 +23,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands {
 
             const int max_length = 400; // allow for 112 characters of overhead
             int length = 0;
-            List<string> batch = new List<string>(); 
+            List<string> batch = new(); 
 
             void sendBatch() {
                 if(length < 1)

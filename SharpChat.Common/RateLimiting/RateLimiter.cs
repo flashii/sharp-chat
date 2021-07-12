@@ -24,8 +24,8 @@ namespace SharpChat.RateLimiting {
         public TimeSpan Threshold => TimeSpan.FromSeconds(ThresholdValue);
         public TimeSpan BanDuration => TimeSpan.FromSeconds(BanDurationValue);
 
-        private List<RateLimiterSession> Sessions { get; } = new List<RateLimiterSession>();
-        private readonly object Sync = new object();
+        private List<RateLimiterSession> Sessions { get; } = new();
+        private readonly object Sync = new();
 
         public RateLimiter(IConfig config) {
             BanDurationValue = config.ReadCached(@"banDuration", DEFAULT_BAN_DURATION);

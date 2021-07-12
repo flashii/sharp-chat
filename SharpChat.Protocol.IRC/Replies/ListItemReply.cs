@@ -21,7 +21,7 @@ namespace SharpChat.Protocol.IRC.Replies {
         }
 
         protected override string BuildLine() {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             sb.Append(Channel.GetIRCName());
             sb.Append(' ');

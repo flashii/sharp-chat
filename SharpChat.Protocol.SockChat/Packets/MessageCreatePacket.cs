@@ -18,7 +18,7 @@ namespace SharpChat.Protocol.SockChat.Packets {
             Channel = channel;
             IsAction = isAction;
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             if(isAction)
                 sb.Append(@"<i>");
@@ -32,7 +32,7 @@ namespace SharpChat.Protocol.SockChat.Packets {
         }
 
         protected override string DoPack() {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             sb.Append((int)ServerPacketId.MessageAdd);
             sb.Append(IServerPacket.SEPARATOR);

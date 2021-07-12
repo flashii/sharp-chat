@@ -11,7 +11,7 @@ namespace SharpChat {
         private bool HasRandomValue { get; set; }
         private DateTimeOffset LastRandomRead { get; set; } = DateTimeOffset.MinValue;
 
-        private readonly object Sync = new object();
+        private readonly object Sync = new();
 
         public bool HasRandom {
             get {

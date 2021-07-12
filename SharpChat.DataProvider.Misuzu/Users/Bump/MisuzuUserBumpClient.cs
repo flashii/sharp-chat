@@ -31,7 +31,7 @@ namespace SharpChat.DataProvider.Misuzu.Users.Bump {
             if(!users.Any())
                 return;
 
-            List<MisuzuUserBumpInfo> infos = new List<MisuzuUserBumpInfo>();
+            List<MisuzuUserBumpInfo> infos = new();
 
             // this is illegal
             foreach(IUser user in users) {
@@ -45,7 +45,7 @@ namespace SharpChat.DataProvider.Misuzu.Users.Bump {
 
             byte[] data = JsonSerializer.SerializeToUtf8Bytes(infos);
 
-            HttpRequestMessage request = new HttpRequestMessage(HttpRequestMessage.POST, DataProvider.GetURL(URL));
+            HttpRequestMessage request = new(HttpRequestMessage.POST, DataProvider.GetURL(URL));
             request.SetHeader(@"X-SharpChat-Signature", DataProvider.GetSignedHash(data));
             request.SetBody(data);
 

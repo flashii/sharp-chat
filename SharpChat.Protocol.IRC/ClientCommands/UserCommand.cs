@@ -80,7 +80,7 @@ namespace SharpChat.Protocol.IRC.ClientCommands {
             bool isInvisible = (mode & MODE_I) > 0;
             bool receiveWallOps = (mode & MODE_W) > 0;
 
-            Action<Exception> exceptionHandler = new Action<Exception>(ex => {
+            Action<Exception> exceptionHandler = new(ex => {
                 Logger.Debug($@"[{ctx.Connection}] Auth fail: {ex.Message}");
                 ctx.Connection.SendReply(new PasswordMismatchReply());
                 ctx.Connection.Close();

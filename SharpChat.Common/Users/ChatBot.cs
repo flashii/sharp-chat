@@ -2,7 +2,7 @@
     public class ChatBot : IUser {
         public long UserId { get; } = -1;
         public string UserName { get; } = @"ChatBot";
-        public Colour Colour { get; } = new Colour(0x9E8DA7);
+        public Colour Colour { get; } = new(0x9E8DA7);
         public int Rank { get; } = 0;
         public string NickName => null;
         public UserPermissions Permissions { get; } = (UserPermissions)(-1);

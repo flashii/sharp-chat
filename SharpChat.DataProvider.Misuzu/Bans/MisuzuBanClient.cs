@@ -24,7 +24,7 @@ namespace SharpChat.DataProvider.Misuzu.Bans {
         }
 
         public void GetBanList(Action<IEnumerable<IBanRecord>> onSuccess, Action<Exception> onFailure = null) {
-            HttpRequestMessage req = new HttpRequestMessage(HttpRequestMessage.GET, DataProvider.GetURL(URL));
+            HttpRequestMessage req = new(HttpRequestMessage.GET, DataProvider.GetURL(URL));
             req.SetHeader(@"X-SharpChat-Signature", DataProvider.GetSignedHash(STRING));
 
             HttpClient.SendRequest(
@@ -35,7 +35,7 @@ namespace SharpChat.DataProvider.Misuzu.Bans {
         }
 
         public void CheckBan(long userId, IPAddress ipAddress, Action<IBanRecord> onSuccess, Action<Exception> onFailure = null) {
-            HttpRequestMessage req = new HttpRequestMessage(
+            HttpRequestMessage req = new(
                 HttpRequestMessage.GET,
                 string.Format(@"{0}?a={1}&u={2}", DataProvider.GetURL(URL_CHECK), ipAddress, userId)
             );
@@ -53,7 +53,7 @@ namespace SharpChat.DataProvider.Misuzu.Bans {
             if(modId < 1)
                 modId = DataProvider.ActorId;
 
-            HttpRequestMessage req = new HttpRequestMessage(HttpRequestMessage.POST, DataProvider.GetURL(URL_CREATE));
+            HttpRequestMessage req = new(HttpRequestMessage.POST, DataProvider.GetURL(URL_CREATE));
             req.SetHeader(@"Content-Type", @"application/x-www-form-urlencoded");
             req.SetHeader(@"X-SharpChat-Signature", DataProvider.GetSignedHash(string.Format(
                 @"create#{0}#{1}#{2}#{3}#{4}",
@@ -80,7 +80,7 @@ namespace SharpChat.DataProvider.Misuzu.Bans {
         }
 
         private void RemoveBan(string type, string subject, Action<bool> onSuccess, Action<Exception> onFailure = null) {
-            HttpRequestMessage req = new HttpRequestMessage(
+            HttpRequestMessage req = new(
                 HttpRequestMessage.DELETE,
                 string.Format(@"{0}?t={1}&s={2}", DataProvider.GetURL(URL_REMOVE), type, subject)
             );

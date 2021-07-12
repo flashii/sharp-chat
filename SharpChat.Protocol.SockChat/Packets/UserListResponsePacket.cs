@@ -16,7 +16,7 @@ namespace SharpChat.Protocol.SockChat.Packets {
             : base(sender, BotArguments.Notice(@"whochan", channelName, MakeUserList(requester, users))) { }
 
         private static string MakeUserList(IUser requester, IEnumerable<IUser> users) {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             foreach(IUser user in users) {
                 sb.Append(@"<a href=""javascript:void(0);"" onclick=""UI.InsertChatText(this.innerHTML);""");

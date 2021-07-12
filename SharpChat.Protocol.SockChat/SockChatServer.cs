@@ -38,7 +38,7 @@ namespace SharpChat.Protocol.SockChat {
 
             Connections = new ConnectionList<SockChatConnection>(Context.ChannelUsers);
 
-            Dictionary<ClientPacketId, IPacketHandler> handlers = new Dictionary<ClientPacketId, IPacketHandler>();
+            Dictionary<ClientPacketId, IPacketHandler> handlers = new();
             void addHandler(IPacketHandler handler) {
                 handlers.Add(handler.PacketId, handler);
             };
@@ -95,7 +95,7 @@ namespace SharpChat.Protocol.SockChat {
 
             Server = new FleckWebSocketServer(ipEndPoint, false);
             Server.Start(rawConn => {
-                SockChatConnection conn = new SockChatConnection(rawConn);
+                SockChatConnection conn = new(rawConn);
                 rawConn.OnOpen += () => OnOpen(conn);
                 rawConn.OnClose += () => OnClose(conn);
                 rawConn.OnError += ex => OnError(conn, ex);
@@ -198,7 +198,7 @@ namespace SharpChat.Protocol.SockChat {
                     break;
 
                 case UserUpdateEvent uue:
-                    UserUpdatePacket uuep = new UserUpdatePacket(uue);
+                    UserUpdatePacket uuep = new(uue);
                     Connections.GetAllConnectionsByUserId(uue.UserId, conns => {
                         foreach(SockChatConnection conn in conns)
                             conn.SendPacket(uuep);
@@ -206,7 +206,7 @@ namespace SharpChat.Protocol.SockChat {
                     break;
                 case UserDisconnectEvent ude:
                     Context.Users.GetUser(ude.UserId, user => {
-                        UserDisconnectPacket udep = new UserDisconnectPacket(ude, user);
+                        UserDisconnectPacket udep = new(ude, user);
                         Connections.GetAllConnectionsByUserId(ude.UserId, conns => {
                             foreach(SockChatConnection conn in conns)
                                 conn.SendPacket(udep);
@@ -220,7 +220,7 @@ namespace SharpChat.Protocol.SockChat {
 
                 case ChannelUserJoinEvent cuje: // should send UserConnectPacket on first channel join
                     Context.Users.GetUser(cuje.UserId, user => {
-                        ChannelJoinPacket cjep = new ChannelJoinPacket(cuje, user);
+                        ChannelJoinPacket cjep = new(cuje, user);
                         Connections.GetConnectionsByChannelId(cuje.ChannelId, conns => {
                             conns = conns.Where(c => !user.Equals(c.Session?.User));
                             foreach(SockChatConnection conn in conns)
@@ -231,7 +231,7 @@ namespace SharpChat.Protocol.SockChat {
                     UserJoinChannel(cuje.ChannelId, cuje.SessionId);
                     break;
                 case ChannelUserLeaveEvent cle:
-                    ChannelLeavePacket clep = new ChannelLeavePacket(cle);
+                    ChannelLeavePacket clep = new(cle);
                     Connections.GetConnectionsByChannelId(cle.ChannelId, conns => {
                         foreach(SockChatConnection conn in conns)
                             conn.SendPacket(clep);
@@ -242,7 +242,7 @@ namespace SharpChat.Protocol.SockChat {
                     Context.Channels.GetChannelById(mce.ChannelId, channel => {
                         if(channel == null)
                             return;
-                        MessageCreatePacket mcep = new MessageCreatePacket(mce.MessageId, mce.UserId, mce.DateTime, channel, mce.Text, mce.IsAction);
+                        MessageCreatePacket mcep = new(mce.MessageId, mce.UserId, mce.DateTime, channel, mce.Text, mce.IsAction);
                         Connections.GetConnectionsByChannelId(mce.ChannelId, conns => {
                             foreach(SockChatConnection conn in conns)
                                 conn.SendPacket(mcep);
@@ -250,7 +250,7 @@ namespace SharpChat.Protocol.SockChat {
                     });
                     break;
                 case MessageDeleteEvent mde:
-                    MessageDeletePacket mdep = new MessageDeletePacket(mde);
+                    MessageDeletePacket mdep = new(mde);
                     Connections.GetConnectionsByChannelId(mde.ChannelId, conns => {
                         foreach(SockChatConnection conn in conns)
                             conn.SendPacket(mdep);
@@ -265,8 +265,8 @@ namespace SharpChat.Protocol.SockChat {
                             if(channel == null)
                                 return;
 
-                            MessageDeletePacket muepd = new MessageDeletePacket(mue);
-                            MessageCreatePacket muecd = new MessageCreatePacket(mue.MessageId, msg.Sender.UserId, mue.DateTime, channel, mue.Text, msg.IsAction);
+                            MessageDeletePacket muepd = new(mue);
+                            MessageCreatePacket muecd = new(mue.MessageId, msg.Sender.UserId, mue.DateTime, channel, mue.Text, msg.IsAction);
 
                             Connections.GetConnectionsByChannelId(mue.ChannelId, conns => {
                                 foreach(SockChatConnection conn in conns) {
@@ -279,7 +279,7 @@ namespace SharpChat.Protocol.SockChat {
                     break;
 
                 case BroadcastMessageEvent bme:
-                    BroadcastMessagePacket bmep = new BroadcastMessagePacket(bme);
+                    BroadcastMessagePacket bmep = new(bme);
                     Connections.GetConnectionsWithSession(conns => {
                         foreach(SockChatConnection conn in conns)
                             conn.SendPacket(bmep);

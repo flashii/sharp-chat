@@ -16,7 +16,7 @@ namespace SharpChat.Protocol.SockChat.Commands {
         }
 
         public bool IsCommandMatch(string name, IEnumerable<string> args)
-            => name == @"password" || name == @"pwd";
+            => name is @"password" or @"pwd";
 
         public bool DispatchCommand(CommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.SetChannelPassword) || ctx.Channel.OwnerId != ctx.User.UserId)

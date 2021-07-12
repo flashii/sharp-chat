@@ -6,7 +6,7 @@ namespace SharpChat.Configuration {
         private string Name { get; }
         private TimeSpan Lifetime { get; }
         private T Fallback { get; }
-        private object Sync { get; } = new object();
+        private object Sync { get; } = new();
 
         private object CurrentValue { get; set; }
         private DateTimeOffset LastRead { get; set; }

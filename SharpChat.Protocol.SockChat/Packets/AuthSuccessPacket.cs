@@ -20,7 +20,7 @@ namespace SharpChat.Protocol.SockChat.Packets {
         }
 
         protected override string DoPack() {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             sb.Append((int)ServerPacketId.UserConnect);
             sb.Append(IServerPacket.SEPARATOR);

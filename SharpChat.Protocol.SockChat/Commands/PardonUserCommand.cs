@@ -16,7 +16,7 @@ namespace SharpChat.Protocol.SockChat.Commands {
         }
 
         public bool IsCommandMatch(string name, IEnumerable<string> args)
-            => name == @"pardon" || name == @"unban";
+            => name is @"pardon" or @"unban";
 
         public bool DispatchCommand(CommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.BanUser | UserPermissions.KickUser))

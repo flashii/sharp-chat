@@ -51,7 +51,7 @@ namespace SharpChat.DataProvider.Misuzu {
             => GetSignedHash(Encoding.UTF8.GetBytes(str), key);
 
         public string GetSignedHash(byte[] bytes, string key = null) {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             using(HMACSHA256 algo = new HMACSHA256(Encoding.UTF8.GetBytes(key ?? SecretKey))) {
                 byte[] hash = algo.ComputeHash(bytes);

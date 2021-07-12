@@ -7,7 +7,7 @@ namespace SharpChat.Reflection {
     public class ObjectConstructor<TObject, TAttribute, TDefault>
         where TAttribute : ObjectConstructorAttribute
         where TDefault : TObject {
-        private Dictionary<string, Type> Types { get; } = new Dictionary<string, Type>();
+        private Dictionary<string, Type> Types { get; } = new();
         private bool AllowDefault { get; }
 
         public ObjectConstructor(bool allowDefault = true) {
@@ -22,7 +22,7 @@ namespace SharpChat.Reflection {
                 IEnumerable<Type> types = asm.GetExportedTypes();
                 foreach(Type type in types) {
                     Attribute attr = type.GetCustomAttribute(typeof(TAttribute));
-                    if(attr != null && attr is ObjectConstructorAttribute oca)
+                    if(attr is not null and ObjectConstructorAttribute oca)
                         Types.Add(oca.Name, type);
                 }
             }
@@ -31,13 +31,10 @@ namespace SharpChat.Reflection {
         public TObject Construct(string name, params object[] args) {
             if(name == null)
                 throw new ArgumentNullException(name);
-            Type type;
-            if(!Types.ContainsKey(name)) {
-                if(AllowDefault)
-                    type = typeof(TDefault);
-                else
-                    throw new ObjectConstructorObjectNotFoundException(name);
-            } else type = Types[name];
+
+            Type type = !Types.ContainsKey(name)
+                ? (AllowDefault ? typeof(TDefault) : throw new ObjectConstructorObjectNotFoundException(name))
+                : Types[name];
 
             IEnumerable<object> arguments = args;
             IEnumerable<Type> types = arguments.Select(a => a.GetType());

@@ -13,7 +13,7 @@ namespace SharpChat.Protocol.SockChat.Commands {
         }
 
         public bool IsCommandMatch(string name, IEnumerable<string> args)
-            => name == @"kick" || name == @"ban";
+            => name is @"kick" or @"ban";
 
         public bool DispatchCommand(CommandContext ctx) {
             string commandName = ctx.Args.First();

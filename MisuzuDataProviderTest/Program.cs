@@ -18,7 +18,7 @@ namespace MisuzuDataProviderTest {
         public static void Main() {
             WriteLine("Misuzu Authentication Tester");
 
-            using ManualResetEvent mre = new ManualResetEvent(false);
+            using ManualResetEvent mre = new(false);
 
             string cfgPath = Path.GetDirectoryName(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location));
             string buildMode = Path.GetFileName(cfgPath);

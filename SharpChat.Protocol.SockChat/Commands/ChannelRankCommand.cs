@@ -16,7 +16,7 @@ namespace SharpChat.Protocol.SockChat.Commands {
         }
 
         public bool IsCommandMatch(string name, IEnumerable<string> args)
-            => name == @"rank" || name == @"hierarchy" || name == @"priv";
+            => name is @"rank" or @"hierarchy" or @"priv";
 
         public bool DispatchCommand(CommandContext ctx) {
             if(!ctx.User.Can(UserPermissions.SetChannelHierarchy) || ctx.Channel.OwnerId != ctx.User.UserId)

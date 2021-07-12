@@ -7,9 +7,9 @@ using System.Net.Sockets;
 namespace SharpChat.Protocol.IRC {
     public class IRCConnectionList : ConnectionList<IRCConnection> {
         // it's not there if you don't look at it
-        private Dictionary<Socket, IRCConnection> Connections { get; } = new Dictionary<Socket, IRCConnection>();
-        private Dictionary<IRCConnection, Socket> Sockets { get; } = new Dictionary<IRCConnection, Socket>();
-        private readonly object Sync = new object();
+        private Dictionary<Socket, IRCConnection> Connections { get; } = new();
+        private Dictionary<IRCConnection, Socket> Sockets { get; } = new();
+        private readonly object Sync = new();
 
         public IRCConnectionList(ChannelUserRelations channelUsers) : base(channelUsers) {
         }
@@ -52,7 +52,7 @@ namespace SharpChat.Protocol.IRC {
                     return;
                 }
 
-                List<Socket> sockets = new List<Socket>(Sockets.Values);
+                List<Socket> sockets = new(Sockets.Values);
                 Socket.Select(sockets, null, null, 5000000);
                 callback(sockets.Select(s => Connections[s]));
             }

@@ -1,6 +1,5 @@
 ﻿using SharpChat.Configuration;
 using System;
-using System.Collections.Generic;
 using System.Data.SQLite;
 
 namespace SharpChat.Database.SQLite {

@@ -10,7 +10,7 @@ namespace SharpChat.Protocol.SockChat.Users {
             if(user is ChatBot)
                 return user.UserName;
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             if(user.Status == UserStatus.Away)
                 sb.Append(user.StatusMessage.ToAFKString());
@@ -26,7 +26,7 @@ namespace SharpChat.Protocol.SockChat.Users {
         }
 
         public static string GetDisplayName(this UserUpdateEvent uue) {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
 
             if((uue.NewStatus ?? uue.OldStatus) == UserStatus.Away)
                 sb.Append((uue.NewStatusMessage ?? uue.OldStatusMessage).ToAFKString());
@@ -45,7 +45,7 @@ namespace SharpChat.Protocol.SockChat.Users {
             => string.Format(@"&lt;{0}&gt;_", str.Substring(0, Math.Min(str.Length, 5)).ToUpperInvariant());
 
         public static string Pack(this IUser user) {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             user.Pack(sb);
             return sb.ToString();
         }
@@ -83,7 +83,7 @@ namespace SharpChat.Protocol.SockChat.Users {
         }
 
         public static string Pack(this UserPermissions perms) {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             perms.Pack(sb);
             return sb.ToString();
         }

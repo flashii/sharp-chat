@@ -7,8 +7,8 @@ namespace SharpChat.RateLimiting {
     public class RateLimiterSession {
         public IConnection Connection { get; }
 
-        private Queue<DateTimeOffset> TimePoints { get; } = new Queue<DateTimeOffset>();
-        private readonly object Sync = new object();
+        private Queue<DateTimeOffset> TimePoints { get; } = new();
+        private readonly object Sync = new();
 
         private RateLimiter Limiter { get; }
 

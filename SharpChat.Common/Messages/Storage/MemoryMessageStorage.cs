@@ -6,9 +6,9 @@ using System.Linq;
 
 namespace SharpChat.Messages.Storage {
     public class MemoryMessageStorage : IMessageStorage {
-        private List<MemoryMessage> Messages { get; } = new List<MemoryMessage>();
-        private List<MemoryMessageChannel> Channels { get; } = new List<MemoryMessageChannel>();
-        private readonly object Sync = new object();
+        private List<MemoryMessage> Messages { get; } = new();
+        private List<MemoryMessageChannel> Channels { get; } = new();
+        private readonly object Sync = new();
 
         public void GetMessage(long messageId, Action<IMessage> callback) {
             if(callback == null)
@@ -37,7 +37,7 @@ namespace SharpChat.Messages.Storage {
                 MemoryMessageChannel channel = Channels.FirstOrDefault(c => mce.ChannelId.Equals(mce.ChannelId));
                 if(channel == null)
                     return; // This is basically an invalid state
-                Messages.Add(new MemoryMessage(channel, mce));
+                Messages.Add(new(channel, mce));
             }
         }
 
@@ -53,7 +53,7 @@ namespace SharpChat.Messages.Storage {
 
         private void CreateChannel(ChannelCreateEvent cce) {
             lock(Sync)
-                Channels.Add(new MemoryMessageChannel(cce));
+                Channels.Add(new(cce));
         }
 
         private void DeleteChannel(ChannelDeleteEvent cde) {

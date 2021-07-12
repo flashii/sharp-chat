@@ -8,8 +8,8 @@ using System.Linq;
 namespace SharpChat.Protocol {
     public class ConnectionList<TConnection>
         where TConnection : IConnection {
-        private HashSet<TConnection> Connections { get; } = new HashSet<TConnection>();
-        private readonly object Sync = new object();
+        private HashSet<TConnection> Connections { get; } = new();
+        private readonly object Sync = new();
 
         private ChannelUserRelations ChannelUsers { get; }
 

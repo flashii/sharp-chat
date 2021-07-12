@@ -10,7 +10,7 @@ namespace SharpChat {
             Raw = argb;
         }
 
-        public static implicit operator Colour(int argb) => new Colour(argb);
+        public static implicit operator Colour(int argb) => new(argb);
 
         public bool Equals(Colour? other)
             => other.HasValue && other.Value.Raw == Raw;

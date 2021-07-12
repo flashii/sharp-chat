@@ -4,8 +4,8 @@ using System.Text;
 
 namespace SharpChat {
     public static class RNG {
-        private static object Lock { get; } = new object();
-        private static Random NormalRandom { get; } = new Random();
+        private static object Lock { get; } = new();
+        private static Random NormalRandom { get; } = new();
         private static RandomNumberGenerator SecureRandom { get; } = RandomNumberGenerator.Create();
 
         public static int Next() {
@@ -33,7 +33,7 @@ namespace SharpChat {
         public static string NextString(int length, string chars = ID_CHARS) {
             byte[] buffer = new byte[length];
             NextBytes(buffer);
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             foreach(byte b in buffer)
                 sb.Append(chars[b % chars.Length]);
             return sb.ToString();

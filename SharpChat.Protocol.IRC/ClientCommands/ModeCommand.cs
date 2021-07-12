@@ -1,15 +1,12 @@
 ﻿using SharpChat.Channels;
 using SharpChat.Protocol.IRC.Channels;
 using SharpChat.Protocol.IRC.Replies;
-using SharpChat.Protocol.IRC.ServerCommands;
 using SharpChat.Protocol.IRC.Sessions;
 using SharpChat.Sessions;
 using SharpChat.Users;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SharpChat.Protocol.IRC.ClientCommands {
     public class ModeCommand : IClientCommand {
