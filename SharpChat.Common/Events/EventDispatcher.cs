@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 
 namespace SharpChat.Events {
@@ -17,9 +18,19 @@ namespace SharpChat.Events {
         private bool RunUntilEmpty = false;
         private Thread ProcessThread = null;
 
+        [Conditional(@"DEBUG")]
+        private static void WithDebugColour(string str, ConsoleColor colour) {
+            ConsoleColor prev = Console.ForegroundColor;
+            Console.ForegroundColor = colour;
+            Logger.Debug(str);
+            Console.ForegroundColor = prev;
+        }
+
         public void DispatchEvent(object sender, IEvent evt) {
-            lock(SyncQueue)
+            lock(SyncQueue) {
+                WithDebugColour($@"+ {evt} <- {sender}.", ConsoleColor.Red);
                 EventQueue.Enqueue((sender, evt));
+            }
         }
 
         public void AddEventHandler(IEventHandler handler) {
@@ -48,9 +59,11 @@ namespace SharpChat.Events {
         public bool ProcessNextQueue() {
             (object sender, IEvent evt) queued;
 
-            lock(SyncQueue)
+            lock(SyncQueue) {
                 if(!EventQueue.TryDequeue(out queued))
                     return false;
+                WithDebugColour($@"~ {queued.evt} <- {queued.sender}.", ConsoleColor.Green);
+            }
 
             lock(SyncHandlers)
                 foreach(IEventHandler handler in EventHandlers)

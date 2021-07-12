@@ -80,6 +80,10 @@ namespace SharpChat.Protocol.SockChat.PacketHandlers {
                                 }
 
                                 Sessions.Create(ctx.Connection, user, session => {
+                                    // TODO: !!!!!!!!!!!!!!!!
+                                    ctx.Connection.Session = session;
+                                    session.Connection = ctx.Connection;
+
                                     string welcome = Server.WelcomeMessage;
                                     if(!string.IsNullOrWhiteSpace(welcome))
                                         ctx.Connection.SendPacket(new WelcomeMessagePacket(Sender, welcome.Replace(@"{username}", user.UserName)));

@@ -112,6 +112,10 @@ namespace SharpChat.Protocol.IRC.ClientCommands {
                                 }
 
                                 Sessions.Create(ctx.Connection, user, session => {
+                                    // TODO: !!!!!!!!!!!!!!!!
+                                    ctx.Connection.Session = session;
+                                    session.Connection = ctx.Connection;
+
                                     ctx.Connection.SendReply(new WelcomeReply(Server, user));
                                     ctx.Connection.SendReply(new YourHostReply(Server));
                                     ctx.Connection.SendReply(new CreatedReply(Context));
