@@ -1,11 +1,11 @@
 ﻿namespace SharpChat.Protocol.IRC.Replies {
-    public class PasswordMismatchReply : Reply {
+    public class PasswordMismatchReply : IReply {
         public const int CODE = 464;
         public const string LINE = @":Authentication failed.";
 
-        public override int ReplyCode => CODE;
+        public int ReplyCode => CODE;
 
-        protected override string BuildLine() {
+        public string GetLine() {
             return LINE;
         }
     }

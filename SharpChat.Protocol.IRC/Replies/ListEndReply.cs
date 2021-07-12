@@ -1,11 +1,11 @@
 ﻿namespace SharpChat.Protocol.IRC.Replies {
-    public class ListEndReply : Reply {
+    public class ListEndReply : IReply {
         public const int CODE = 323;
         public const string LINE = @":End of LIST";
 
-        public override int ReplyCode => CODE;
+        public int ReplyCode => CODE;
 
-        protected override string BuildLine() {
+        public string GetLine() {
             return LINE;
         }
     }

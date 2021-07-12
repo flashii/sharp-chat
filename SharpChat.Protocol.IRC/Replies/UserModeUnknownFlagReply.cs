@@ -1,11 +1,11 @@
 ﻿namespace SharpChat.Protocol.IRC.Replies {
-    public class UserModeUnknownFlagReply : Reply {
+    public class UserModeUnknownFlagReply : IReply {
         public const int CODE = 501;
         public const string LINE = @":Unknown MODE flag";
 
-        public override int ReplyCode => CODE;
+        public int ReplyCode => CODE;
 
-        protected override string BuildLine() {
+        public string GetLine() {
             return LINE;
         }
     }

@@ -1,11 +1,11 @@
 ﻿namespace SharpChat.Protocol.IRC.Replies {
-    public class AlreadyRegisteredReply : Reply {
+    public class AlreadyRegisteredReply : IReply {
         public const int CODE = 462;
         public const string LINE = @":You're already authenticated.";
 
-        public override int ReplyCode => CODE;
+        public int ReplyCode => CODE;
 
-        protected override string BuildLine() {
+        public string GetLine() {
             return LINE;
         }
     }

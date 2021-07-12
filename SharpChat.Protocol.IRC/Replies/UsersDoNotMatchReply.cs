@@ -1,11 +1,11 @@
 ﻿namespace SharpChat.Protocol.IRC.Replies {
-    public class UsersDoNotMatchReply : Reply {
+    public class UsersDoNotMatchReply : IReply {
         public const int CODE = 502;
         public const string LINE = @":Cannot change mode for other users";
 
-        public override int ReplyCode => CODE;
+        public int ReplyCode => CODE;
 
-        protected override string BuildLine() {
+        public string GetLine() {
             return LINE;
         }
     }
